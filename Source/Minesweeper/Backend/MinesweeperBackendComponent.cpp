@@ -233,7 +233,7 @@ void UMinesweeperBackendComponent::HandleReceivingMessage(const FString& Message
 		else if (StatusStr.StartsWith(ResponseStatusStartingWithYouWin))
 		{
 			FString LevelPassword,
-							Description;
+				Description;
 
 			StatusStr.Split(TEXT(":"), &Description, &LevelPassword);
 			LevelPassword.TrimStartInline();

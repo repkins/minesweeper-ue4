@@ -244,7 +244,7 @@ void AMinesweeperPlayerControllerBase::AddRemoveGridMapAreaCells(const FMineGrid
 				// Start with subtractive bounds first
 				for (const TCoordsBoundsTuple& SideBoundsTuple : SubtractiveBounds)
 				{
-					FIntPoint	StartCoords = SideBoundsTuple.Get<0>(),
+					FIntPoint StartCoords = SideBoundsTuple.Get<0>(),
 						EndCoords = SideBoundsTuple.Get<1>();
 
 					for (int32 Y = StartCoords.Y; Y <= EndCoords.Y; ++Y)
@@ -261,7 +261,7 @@ void AMinesweeperPlayerControllerBase::AddRemoveGridMapAreaCells(const FMineGrid
 				// Then with additive bounds
 				for (const TCoordsBoundsTuple& SideBoundsTuple : AdditiveBounds)
 				{
-					FIntPoint	StartCoords = SideBoundsTuple.Get<0>(),
+					FIntPoint StartCoords = SideBoundsTuple.Get<0>(),
 						EndCoords = SideBoundsTuple.Get<1>();
 
 					for (int32 Y = StartCoords.Y; Y <= EndCoords.Y; ++Y)

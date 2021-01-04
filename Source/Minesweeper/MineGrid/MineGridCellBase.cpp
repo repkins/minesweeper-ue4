@@ -30,7 +30,7 @@ AMineGridCellBase::AMineGridCellBase()
 
 	// Setup cell mesh component
 	CellMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("CellMesh"));
-  CellMesh->SetupAttachment(GetRootComponent());
+	CellMesh->SetupAttachment(GetRootComponent());
 
 	CellMesh->SetMobility(EComponentMobility::Stationary);
 
@@ -56,50 +56,50 @@ void AMineGridCellBase::UpdateCellValue(const EMineGridMapCell& NewCellValue)
 		}
 
 		if (ClearMaterial)
-    {
-      // Set appropriate material
-      CellMesh->SetMaterial(0, ClearMaterial);
+		{
+			// Set appropriate material
+			CellMesh->SetMaterial(0, ClearMaterial);
 		}
 
 		// Disable generation of overlap events
 		TriggerBox->SetGenerateOverlapEvents(false);
 	} 
 	else if (NewCellValue == EMineGridMapCell::MGMC_Revealed)
-  {
-    // Set cell value
+	{
+		// Set cell value
 		FString AsteriskStr = TEXT("*");
-    ValueText->SetText(FText::FromString(AsteriskStr));
+		ValueText->SetText(FText::FromString(AsteriskStr));
 
-    if (UntriggeredMaterial)
-    {
-      // Set appropriate material
-      CellMesh->SetMaterial(0, UntriggeredMaterial);
-    }
+		if (UntriggeredMaterial)
+		{
+			// Set appropriate material
+			CellMesh->SetMaterial(0, UntriggeredMaterial);
+		}
 	}
 	else if (NewCellValue == EMineGridMapCell::MGMC_Undiscovered)
 	{
-    // Set cell value
-    FString EmptyStr = TEXT("");
-    ValueText->SetText(FText::FromString(EmptyStr));
+		// Set cell value
+		FString EmptyStr = TEXT("");
+		ValueText->SetText(FText::FromString(EmptyStr));
 
 		if (UntriggeredMaterial)
-    {
-      // Set appropriate material
-      CellMesh->SetMaterial(0, UntriggeredMaterial);
+		{
+			// Set appropriate material
+			CellMesh->SetMaterial(0, UntriggeredMaterial);
 		}
 
-    // Enable generation of overlap events
-    TriggerBox->SetGenerateOverlapEvents(true);
+		// Enable generation of overlap events
+		TriggerBox->SetGenerateOverlapEvents(true);
 	}
 }
 
 void AMineGridCellBase::SetCellExploded_Implementation()
 {
-  if (ExplodedMaterial)
-  {
-    // Set appropriate material
-    CellMesh->SetMaterial(0, ExplodedMaterial);
-  }
+	if (ExplodedMaterial)
+	{
+		// Set appropriate material
+		CellMesh->SetMaterial(0, ExplodedMaterial);
+	}
 }
 
 // Called when the game starts or when spawned
@@ -113,8 +113,8 @@ void AMineGridCellBase::BeginPlay()
 void AMineGridCellBase::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	if (OtherActor)
-  {
-    ACharacter* OtherCharacter = Cast<ACharacter>(OtherActor);
+	{
+		ACharacter* OtherCharacter = Cast<ACharacter>(OtherActor);
 		if (OtherCharacter)
 		{
 			OnCharacterCellEnter(OtherCharacter);
@@ -124,8 +124,8 @@ void AMineGridCellBase::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent,
 
 void AMineGridCellBase::OnCharacterCellEnter_Implementation(ACharacter* EnteringCharacter)
 {
-  if (OwnerGrid)
-  {
+	if (OwnerGrid)
+	{
 		OwnerGrid->HandleCharacterCellTriggering(this, EnteringCharacter);
-  }
+	}
 }

@@ -22,7 +22,7 @@ struct FMineGridMap
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	FIntPoint StartCoords = FIntPoint(0, 0);
 
-  /** Represents last cell in last row */
+	/** Represents last cell in last row */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	FIntPoint EndCoords = FIntPoint(-1, -1);
 };

@@ -46,7 +46,7 @@ void AMineGridBase::ResetGridCells(const FMineGridMap& NewMineGridMap)
 	FIntPoint NewStartCoords(0, 0);
 	FIntPoint NewEndCoords(-1, -1);
 	if (NewGridMapCellsIterator)
-  {
+	{
 		NewStartCoords = NewGridMapCellsIterator->Key;
 		NewEndCoords = NewStartCoords + (NewMineGridMap.GridDimensions - FIntPoint(1, 1));
 	}
@@ -54,9 +54,9 @@ void AMineGridBase::ResetGridCells(const FMineGridMap& NewMineGridMap)
 	FIntPoint CurrentStartCoords(0, 0);
 	FIntPoint CurrentEndCoords(-1, -1);
 	if (CurrentGridCellsIterator)
-  {
-    CurrentStartCoords = CurrentGridCellsIterator->Key;
-    CurrentEndCoords = CurrentStartCoords + (GridDimensions - FIntPoint(1, 1));
+	{
+		CurrentStartCoords = CurrentGridCellsIterator->Key;
+		CurrentEndCoords = CurrentStartCoords + (GridDimensions - FIntPoint(1, 1));
 	}
 
 	TMap<FIntPoint, AMineGridCellBase*> NewGridCoordsCells;
@@ -81,11 +81,11 @@ void AMineGridBase::ResetGridCells(const FMineGridMap& NewMineGridMap)
 		// Destroy redundant cell if both
 		//	1) new grid map iterator is valid
 		//	2) and current grid cells iterator entry is not within coords range of current grid
-    else if (CurrentGridCellsIterator && 
+		else if (CurrentGridCellsIterator && 
 			(!FMath::IsWithinInclusive(CurrentGridCellsIterator->Key.X, NewStartCoords.X, NewEndCoords.X) ||
-      !FMath::IsWithinInclusive(CurrentGridCellsIterator->Key.Y, NewStartCoords.Y, NewEndCoords.Y)))
+			!FMath::IsWithinInclusive(CurrentGridCellsIterator->Key.Y, NewStartCoords.Y, NewEndCoords.Y)))
 		{
- 			CurrentGridCellsIterator->Value->Destroy();
+			CurrentGridCellsIterator->Value->Destroy();
 			++CurrentGridCellsIterator;
 		}
 		// Use existing cell if:

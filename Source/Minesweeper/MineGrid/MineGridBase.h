@@ -36,9 +36,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void ResetGridCells(const FMineGridMap& NewMineGridMap);
 
-  // Updates grid cells actors according by added and removed cells.
-  UFUNCTION(BlueprintCallable)
-  void AddOrRemoveGridCells(const TMap<FIntPoint, EMineGridMapCell>& AddedGridMapCells, const TSet<FIntPoint>& RemovedGridMapCells, const FIntPoint& NewGridDimensions);
+	// Updates grid cells actors according by added and removed cells.
+	UFUNCTION(BlueprintCallable)
+	void AddOrRemoveGridCells(const TMap<FIntPoint, EMineGridMapCell>& AddedGridMapCells, const TSet<FIntPoint>& RemovedGridMapCells, const FIntPoint& NewGridDimensions);
 
 	// Update grid cell values according by new map data
 	UFUNCTION()

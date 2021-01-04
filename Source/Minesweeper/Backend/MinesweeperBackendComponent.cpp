@@ -261,7 +261,7 @@ void UMinesweeperBackendComponent::ParseMapGridLines(TArray<FString>::TConstIter
 	TMap<FIntPoint, EMineGridMapCell>& OutGridCells = OutMineGridMap.Cells;
 
 	OutMineGridMap.StartCoords = FIntPoint(0, 0);
-	int32 	Y = OutMineGridMap.StartCoords.Y,
+	int32 Y = OutMineGridMap.StartCoords.Y,
 		X = OutMineGridMap.StartCoords.X;
 	for (MessageLinesIterator; MessageLinesIterator; ++MessageLinesIterator)
 	{

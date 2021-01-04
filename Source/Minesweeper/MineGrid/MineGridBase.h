@@ -32,10 +32,6 @@ public:
 	UFUNCTION()
 	void HandleCharacterCellTriggering(class AMineGridCellBase* EnteredCell, class ACharacter* EnteringCharacter);
 
-	// Resets grid cells actors according by new cells map in different grid dimensions, slow.
-	UFUNCTION(BlueprintCallable)
-	void ResetGridCells(const FMineGridMap& NewMineGridMap);
-
 	// Updates grid cells actors according by added and removed cells.
 	UFUNCTION(BlueprintCallable)
 	void AddOrRemoveGridCells(const TMap<FIntPoint, EMineGridMapCell>& AddedGridMapCells, const TSet<FIntPoint>& RemovedGridMapCells, const FIntPoint& NewGridDimensions);

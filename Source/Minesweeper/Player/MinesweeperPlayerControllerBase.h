@@ -37,10 +37,10 @@ public:
 	UFUNCTION()
 	void UpdateGridMapAreaValues(const FMineGridMap& MineGridMap);
 
-	UFUNCTION()
+	UFUNCTION(Client, Reliable)
 	void NotifyGameOver();
 
-	UFUNCTION()
+	UFUNCTION(Client, Reliable)
 	void NotifyGameWin();
 
 protected:
@@ -134,8 +134,14 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	void HideGameWin();
 
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Server, Reliable)
 	void SelectNewGame(const uint8 MapSize);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void ApplyAddedRemovedGridCells(const FMineGridMapChanges& GridMapChanges);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void ApplyUpdatedGridCellValues(const FMineGridMapCellUpdates& GridMapChanges);
 
 	AMineGridBase* FindMineGridActor();
 	FIntPoint GetPawnRelativeLocationOfGrid(APawn* PlayerPawn, AMineGridBase* MineGrid);

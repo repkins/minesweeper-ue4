@@ -38,12 +38,12 @@ void AMineGridBase::HandleCharacterCellTriggering(AMineGridCellBase* EnteredCell
 	}
 }
 
-void AMineGridBase::AddOrRemoveGridCells(const TMap<FIntPoint, EMineGridMapCell>& AddedGridMapCells, const TSet<FIntPoint>& RemovedGridMapCells, const FIntPoint& NewGridDimensions)
+void AMineGridBase::AddOrRemoveGridCells(const FMineGridMapChanges& GridMapChanges)
 {
-	GridCoordsCells.Reserve(NewGridDimensions.X * NewGridDimensions.Y);
+	GridCoordsCells.Reserve(GridMapChanges.NewGridDimensions.X * GridMapChanges.NewGridDimensions.Y);
 
 	// Remove and destroy cell actors
-	for (const FIntPoint& CoordsToDestroy : RemovedGridMapCells)
+	for (const FIntPoint& CoordsToDestroy : GridMapChanges.RemovedGridMapCells)
 	{
 		if (AMineGridCellBase* CellActor = GridCoordsCells.FindAndRemoveChecked(CoordsToDestroy))
 		{
@@ -52,25 +52,31 @@ void AMineGridBase::AddOrRemoveGridCells(const TMap<FIntPoint, EMineGridMapCell>
 	}
 
 	// Spawn and add cell actors
-	for (const TPair<FIntPoint, EMineGridMapCell>& CoordsCellEntryToAdd : AddedGridMapCells)
+	auto AddedCoordsIt = GridMapChanges.AddedGridMapCellCoords.CreateConstIterator();
+	auto AddedValuesIt = GridMapChanges.AddedGridMapCellValues.CreateConstIterator();
+
+	for (AddedCoordsIt, AddedValuesIt; AddedCoordsIt && AddedValuesIt; ++AddedCoordsIt, ++AddedValuesIt)
 	{
-		if (AMineGridCellBase* NewCellActor = SpawnCellAt(CoordsCellEntryToAdd.Key))
+		if (AMineGridCellBase* NewCellActor = SpawnCellAt(*AddedCoordsIt))
 		{
-			NewCellActor->UpdateCellValue(CoordsCellEntryToAdd.Value);
-			GridCoordsCells.Emplace(CoordsCellEntryToAdd.Key, NewCellActor);
+			NewCellActor->UpdateCellValue(*AddedValuesIt);
+			GridCoordsCells.Emplace(*AddedCoordsIt, NewCellActor);
 		}
 	}
 
 	// Update grid-dimensions
-	GridDimensions = NewGridDimensions;
+	GridDimensions = GridMapChanges.NewGridDimensions;
 }
 
-void AMineGridBase::UpdateCellValues(const TMap<FIntPoint, EMineGridMapCell>& UpdatedMineGridMapCells)
+void AMineGridBase::UpdateCellValues(const FMineGridMapCellUpdates& UpdatedMineGridMapCells)
 {
-	for (const TPair<FIntPoint, EMineGridMapCell>& CoordsCellEntry : UpdatedMineGridMapCells)
+	auto UpdatedCellCoordsIt = UpdatedMineGridMapCells.UpdatedGridMapCellCoords.CreateConstIterator();
+	auto UpdatedCellValuesIt = UpdatedMineGridMapCells.UpdatedGridMapCellValues.CreateConstIterator();
+
+	for (UpdatedCellCoordsIt, UpdatedCellValuesIt; UpdatedCellCoordsIt && UpdatedCellValuesIt; ++UpdatedCellCoordsIt, ++UpdatedCellValuesIt)
 	{
-		const FIntPoint Coords = CoordsCellEntry.Key;
-		const EMineGridMapCell NewCellValue = CoordsCellEntry.Value;
+		const FIntPoint Coords = *UpdatedCellCoordsIt;
+		const EMineGridMapCell NewCellValue = *UpdatedCellValuesIt;
 
 		if (AMineGridCellBase* CellActor = GridCoordsCells[Coords])
 		{

@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Minesweeper/Backend/MinesweeperBackendComponent.h"
+#include "Minesweeper/Includes/MineGridMapChanges.h"
 #include "MineGridCellBase.h"
 
 #include "MineGridBase.generated.h"
@@ -34,11 +35,11 @@ public:
 
 	// Updates grid cells actors according by added and removed cells.
 	UFUNCTION(BlueprintCallable)
-	void AddOrRemoveGridCells(const TMap<FIntPoint, EMineGridMapCell>& AddedGridMapCells, const TSet<FIntPoint>& RemovedGridMapCells, const FIntPoint& NewGridDimensions);
+	void AddOrRemoveGridCells(const FMineGridMapChanges& GridMapChanges);
 
 	// Update grid cell values according by new map data
 	UFUNCTION()
-	void UpdateCellValues(const TMap<FIntPoint, EMineGridMapCell>& UpdatedMineGridMapCells);
+	void UpdateCellValues(const FMineGridMapCellUpdates& UpdatedMineGridMapCells);
 
 	// Tell grid actor to set cell as exploded
 	UFUNCTION()

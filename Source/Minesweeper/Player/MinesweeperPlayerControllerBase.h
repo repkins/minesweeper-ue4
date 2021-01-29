@@ -32,6 +32,12 @@ public:
 	AMinesweeperPlayerControllerBase();
 
 	UFUNCTION()
+	void AddRemoveGridMapAreaCells(const FMineGridMap& MineGridMap, bool bForcedAddRemove = false);
+
+	UFUNCTION()
+	void UpdateGridMapAreaValues(const FMineGridMap& MineGridMap);
+
+	UFUNCTION()
 	void NotifyGameOver();
 
 	UFUNCTION()
@@ -72,10 +78,6 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Minesweeper|Grid")
 	int32 GridMapAreaVersion;
 
-	/** If forced to add/remove cells */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Minesweeper|Grid")
-	bool bForcedAddRemoveGridCells;
-
 	// 
 	// UI Widgets
 	// 
@@ -110,12 +112,6 @@ protected:
 	virtual void BeginPlay() override;
 
 	virtual void Tick(float DeltaSeconds) override;
-
-	UFUNCTION()
-	void AddRemoveGridMapAreaCells(const FMineGridMap& MineGridMap);
-
-	UFUNCTION()
-	void UpdateGridMapAreaValues(const FMineGridMap& MineGridMap);
 
 	UFUNCTION()
 	void HandleOnTriggeredCoords(const FIntPoint& EnteredCoords);

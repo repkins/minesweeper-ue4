@@ -11,20 +11,9 @@ const FIntPoint AMinesweeperGameModeBase::DefaultCellCoords(-1, -1);
 
 AMinesweeperGameModeBase::AMinesweeperGameModeBase(): Super()
 {
-	MinesweeperBackend = CreateDefaultSubobject<UMinesweeperBackendComponent>(TEXT("MinesweeperBackendComponent"));
-
 	// Setting defaults
-	LastSentCoordsToOpen = AMinesweeperGameModeBase::DefaultCellCoords;
 	MineGridMapVersion = 0;
 	bIsGameOver = false;
-	bTriggeredCellProcessing = false;
-
-	// Setting up backend delegate handlers
-	MinesweeperBackend->OnMapOk.AddDynamic(this, &AMinesweeperGameModeBase::HandleOnMapOk);
-	MinesweeperBackend->OnOpenOk.AddDynamic(this, &AMinesweeperGameModeBase::HandleOnOpenOk);
-	MinesweeperBackend->OnOpenGameOver.AddDynamic(this, &AMinesweeperGameModeBase::HandleOnOpenGameOver);
-	MinesweeperBackend->OnOpenYouWinDelegate.AddDynamic(this, &AMinesweeperGameModeBase::HandleOnOpenYouWin);
-	MinesweeperBackend->OnNewGameOk.AddDynamic(this, &AMinesweeperGameModeBase::HandleOnNewGameOk);
 }
 
 void AMinesweeperGameModeBase::BeginPlay()
@@ -40,110 +29,165 @@ void AMinesweeperGameModeBase::PostLogin(APlayerController* NewPlayer)
 	{
 		NewMinesweeperPlayer->OnPlayerNewGame.AddDynamic(this, &AMinesweeperGameModeBase::HandleOnPlayerNewGame);
 		NewMinesweeperPlayer->OnPlayerTriggeredCoords.AddDynamic(this, &AMinesweeperGameModeBase::HandleOnPlayerTriggeredCoords);
-	}
-}
 
-void AMinesweeperGameModeBase::HandleOnNewGameOk()
-{
-}
-
-void AMinesweeperGameModeBase::HandleOnMapOk(const FMineGridMap& NewMineGridMap)
-{
-	MineGridMapVersion += 1;
-}
-
-void AMinesweeperGameModeBase::HandleOnOpenOk()
-{
-	HandleOnOpen();
-}
-
-void AMinesweeperGameModeBase::HandleOnOpenGameOver()
-{
-	bIsGameOver = true;
-
-	if (AMinesweeperGameStateBase* MinesweeperState = GetGameState<AMinesweeperGameStateBase>())
-	{
-		MinesweeperState->SetExplodedCell(LastSentCoordsToOpen);
-	}
-
-	for (FConstPlayerControllerIterator PlayerIt = GetWorld()->GetPlayerControllerIterator(); PlayerIt; ++PlayerIt)
-	{
-		if (auto MinespeeperPlayer = Cast<AMinesweeperPlayerControllerBase>(*PlayerIt))
+		// Automatically assign first player as lobby leader
+		if (!IsValid(LobbyLeader))
 		{
-			MinespeeperPlayer->NotifyGameOver();
+			LobbyLeader = NewMinesweeperPlayer;
 		}
 	}
-
-	HandleOnOpen();
 }
 
-void AMinesweeperGameModeBase::HandleOnOpenYouWin(const FString& LevelPassword)
+void AMinesweeperGameModeBase::HandleOnPlayerTriggeredCoords(const FIntPoint& EnteredCoords)
 {
-	if (AMinesweeperGameStateBase* MinesweeperState = GetGameState<AMinesweeperGameStateBase>())
+	if (!bIsGameOver && RemainingClearCellCount > 0)
 	{
-		MinesweeperState->SetLevelPassword(LevelPassword);
-	}
+		OpenCell(EnteredCoords);
 
-	for (FConstPlayerControllerIterator PlayerIt = GetWorld()->GetPlayerControllerIterator(); PlayerIt; ++PlayerIt)
-	{
-		if (auto MinespeeperPlayer = Cast<AMinesweeperPlayerControllerBase>(*PlayerIt))
+		if (RemainingClearCellCount == 0)
 		{
-			MinespeeperPlayer->NotifyGameWin();
+			for (FConstPlayerControllerIterator PlayerIt = GetWorld()->GetPlayerControllerIterator(); PlayerIt; ++PlayerIt)
+			{
+				if (auto MinesweeperPlayer = Cast<AMinesweeperPlayerControllerBase>(*PlayerIt))
+				{
+					MinesweeperPlayer->NotifyGameWin();
+				}
+			}
 		}
 	}
-
-	HandleOnOpen();
 }
 
-void AMinesweeperGameModeBase::HandleOnOpen()
+void AMinesweeperGameModeBase::OpenCell(const FIntPoint& EnteredCoords)
 {
-	MinesweeperBackend->SendMapCommand();
-
-	if (bIsGameOver)
+	if (ActualMinesHidden.Contains(EnteredCoords))
 	{
-		RemainingCellsToProcess.Empty();
-	}
+		MineGridMap.Cells.Emplace(EnteredCoords, EMineGridMapCell::MGMC_Revealed);
 
-	FIntPoint NextTriggeredCoords;
-	if (RemainingCellsToProcess.Dequeue(NextTriggeredCoords))
-	{
-		LastSentCoordsToOpen = NextTriggeredCoords;
-		MinesweeperBackend->SendOpenCellCommand(NextTriggeredCoords);
+		bIsGameOver = true;
+
+		if (AMinesweeperGameStateBase* MinesweeperState = GetGameState<AMinesweeperGameStateBase>())
+		{
+			MinesweeperState->SetExplodedCell(EnteredCoords);
+		}
+
+		for (FConstPlayerControllerIterator PlayerIt = GetWorld()->GetPlayerControllerIterator(); PlayerIt; ++PlayerIt)
+		{
+			if (auto MinesweeperPlayer = Cast<AMinesweeperPlayerControllerBase>(*PlayerIt))
+			{
+				MinesweeperPlayer->NotifyGameOver();
+			}
+		}
 	}
 	else
 	{
-		bTriggeredCellProcessing = false;
+		TQueue<FIntPoint> RemainingCells;
+		RemainingCells.Enqueue(EnteredCoords);
+
+		FIntPoint RemainingCellCoords;
+
+		TArray<FIntPoint> SurroundingCellCoordsList;
+		SurroundingCellCoordsList.Reserve(8);
+
+		while (RemainingCells.Dequeue(RemainingCellCoords))
+		{
+			if (MineGridMap.Cells[RemainingCellCoords] != EMineGridMapCell::MGMC_Undiscovered)
+			{
+				continue;
+			}
+
+			FIntPoint StartValidSurroundingCoords(FMath::Clamp(RemainingCellCoords.X - 1, MineGridMap.StartCoords.X, MineGridMap.EndCoords.X),
+				FMath::Clamp(RemainingCellCoords.Y - 1, MineGridMap.StartCoords.Y, MineGridMap.EndCoords.Y));
+			FIntPoint EndValidSurroundingCoords(FMath::Clamp(RemainingCellCoords.X + 1, MineGridMap.StartCoords.X, MineGridMap.EndCoords.X),
+				FMath::Clamp(RemainingCellCoords.Y + 1, MineGridMap.StartCoords.Y, MineGridMap.EndCoords.Y));
+
+			SurroundingCellCoordsList.Reset();
+
+			uint8 MinesCount = 0;
+			for (int32 Y = StartValidSurroundingCoords.Y; Y <= EndValidSurroundingCoords.Y; Y++)
+			{
+				for (int32 X = StartValidSurroundingCoords.X; X <= EndValidSurroundingCoords.X; X++)
+				{
+					FIntPoint CellCoords(X, Y);
+					if (CellCoords == RemainingCellCoords)
+					{
+						continue;
+					}
+
+					if (ActualMinesHidden.Contains(CellCoords))
+					{
+						MinesCount++;
+					}
+
+					SurroundingCellCoordsList.Add(CellCoords);
+				}
+			}
+
+			MineGridMap.Cells.Emplace(RemainingCellCoords, (EMineGridMapCell)MinesCount);
+			RemainingClearCellCount -= 1;
+
+			if (MinesCount == 0)
+			{
+				for (FIntPoint SurroundingCellCoords : SurroundingCellCoordsList)
+				{
+					RemainingCells.Enqueue(SurroundingCellCoords);
+				}
+			}
+		}
 	}
+
+	MineGridMapVersion += 1;
 }
 
 void AMinesweeperGameModeBase::HandleOnPlayerNewGame(const uint8 MapSize)
 {
 	bIsGameOver = false;
-	MineGridMapVersion = 0;
 
 	if (AMinesweeperGameStateBase* MinesweeperState = GetGameState<AMinesweeperGameStateBase>())
 	{
 		MinesweeperState->UnsetExplodedCell();
 	}
 
-	MinesweeperBackend->SendNewGameCommand(MapSize);
-	MinesweeperBackend->SendMapCommand();
-}
+	GenerateNewMap(MapSize);
+	MineGridMapVersion = 0;
 
-void AMinesweeperGameModeBase::HandleOnPlayerTriggeredCoords(const FIntPoint& EnteredCoords)
-{
-	if (!bIsGameOver)
+	for (FConstPlayerControllerIterator PlayerIt = GetWorld()->GetPlayerControllerIterator(); PlayerIt; ++PlayerIt)
 	{
-		if (!bTriggeredCellProcessing)
+		if (auto MinesweeperPlayer = Cast<AMinesweeperPlayerControllerBase>(*PlayerIt))
 		{
-			LastSentCoordsToOpen = EnteredCoords;
+			// Force add/remove cells
+			MinesweeperPlayer->AddRemoveGridMapAreaCells(MineGridMap, true);
 
-			MinesweeperBackend->SendOpenCellCommand(EnteredCoords);
-			bTriggeredCellProcessing = true;
-		}
-		else
-		{
-			RemainingCellsToProcess.Enqueue(EnteredCoords);
+			// Update GridMapArea values
+			MinesweeperPlayer->UpdateGridMapAreaValues(MineGridMap);
 		}
 	}
+}
+
+void AMinesweeperGameModeBase::GenerateNewMap(const uint8 MapSize)
+{
+	FIntPoint BaseDimensions(5, 4);
+	int32 Scale = FMath::FloorToInt(FMath::Exp2(MapSize));
+
+	MineGridMap.GridDimensions = BaseDimensions * Scale;
+	MineGridMap.Cells.Empty(MineGridMap.GridDimensions.X * MineGridMap.GridDimensions.Y);
+
+	MineGridMap.StartCoords = FIntPoint::ZeroValue;
+	MineGridMap.EndCoords = MineGridMap.GridDimensions - 1;
+
+	ActualMinesHidden.Reset();
+	for (int32 Y = MineGridMap.StartCoords.Y; Y <= MineGridMap.EndCoords.Y; Y++)
+	{
+		for (int32 X = MineGridMap.StartCoords.X; X <= MineGridMap.EndCoords.X; X++)
+		{
+			FIntPoint CellCoords(X, Y);
+			MineGridMap.Cells.Emplace(CellCoords, EMineGridMapCell::MGMC_Undiscovered);
+
+			if (FMath::RandRange(0, 5) == 0)
+			{
+				ActualMinesHidden.Emplace(CellCoords);
+			}
+		}
+	}
+
+	RemainingClearCellCount = MineGridMap.Cells.Num() - ActualMinesHidden.Num();
 }

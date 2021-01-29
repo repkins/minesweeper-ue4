@@ -22,7 +22,6 @@ AMinesweeperPlayerControllerBase::AMinesweeperPlayerControllerBase(): Super()
 
 	PrevPlayerRelativeGridCoords = FIntPoint(-1, -1);
 	GridMapAreaVersion = 0;
-	bForcedAddRemoveGridCells = false;
 }
 
 void AMinesweeperPlayerControllerBase::NotifyGameOver()
@@ -96,18 +95,12 @@ void AMinesweeperPlayerControllerBase::Tick(float DeltaSeconds)
 		const FMineGridMap& FullMineGridMap = MinesweeperGameMode->GetMineGridMap();
 
 		// Compare grid map versions to determine if update is necessary, then proceed with update
-		const uint32 &FullGridMapVersion = MinesweeperGameMode->GetMineGridMapVersion();
+		const uint32& FullGridMapVersion = MinesweeperGameMode->GetMineGridMapVersion();
+
 		if (FullGridMapVersion != GridMapAreaVersion)
 		{
 			// Update GridMapArea values
 			UpdateGridMapAreaValues(FullMineGridMap);
-
-			// Tell grid cells updater to force update cause new game is started by determining if  
-			// area version is starting
-			if (GridMapAreaVersion == 0)
-			{
-				bForcedAddRemoveGridCells = true;
-			}
 
 			// Update map version
 			GridMapAreaVersion = FullGridMapVersion;
@@ -128,7 +121,7 @@ void AMinesweeperPlayerControllerBase::Tick(float DeltaSeconds)
 	}
 }
 
-void AMinesweeperPlayerControllerBase::AddRemoveGridMapAreaCells(const FMineGridMap& MineGridMap)
+void AMinesweeperPlayerControllerBase::AddRemoveGridMapAreaCells(const FMineGridMap& MineGridMap, bool bForcedAddRemove)
 {
 	if (MineGridActor)
 	{
@@ -138,7 +131,7 @@ void AMinesweeperPlayerControllerBase::AddRemoveGridMapAreaCells(const FMineGrid
 
 			// Check if need update by determining if pawn (player) is at the same coords as before or 
 			// it is forced to update, then proceed with map area update if new pawn coords is different
-			if (PawnRelativeGridCoords != PrevPlayerRelativeGridCoords || bForcedAddRemoveGridCells)
+			if (PawnRelativeGridCoords != PrevPlayerRelativeGridCoords || bForcedAddRemove)
 			{
 				// Define reference to grid map dimensions
 				const FIntPoint& MapGridDimensions = MineGridMap.GridDimensions;
@@ -153,8 +146,16 @@ void AMinesweeperPlayerControllerBase::AddRemoveGridMapAreaCells(const FMineGrid
 				MineGridMapArea.Cells.Reserve(MapAreaMaxSize.X * MapAreaMaxSize.Y);
 
 				// Determine valid starting & endings coords of map "visible" area
-				const FIntPoint NewStartCoords = FIntPoint(FMath::Clamp(MaxStartCoords.X, 0, MapGridDimensions.X), FMath::Clamp(MaxStartCoords.Y, 0, MapGridDimensions.X));
-				const FIntPoint NewEndCoords = FIntPoint(FMath::Clamp(MaxEndCoords.X, -1, MapGridDimensions.X - 1), FMath::Clamp(MaxEndCoords.Y, -1, MapGridDimensions.Y - 1));
+				//const FIntPoint NewStartCoords = FIntPoint(FMath::Clamp(MaxStartCoords.X, 0, MapGridDimensions.X), FMath::Clamp(MaxStartCoords.Y, 0, MapGridDimensions.Y));
+				//const FIntPoint NewEndCoords = FIntPoint(FMath::Clamp(MaxEndCoords.X, -1, MapGridDimensions.X - 1), FMath::Clamp(MaxEndCoords.Y, -1, MapGridDimensions.Y - 1));
+
+				FIntPoint NewStartCoords;
+				NewStartCoords.X = MaxStartCoords.X >= 0 ? MaxStartCoords.X : FMath::Min(0, MaxEndCoords.X + 1);
+				NewStartCoords.Y = MaxStartCoords.Y >= 0 ? MaxStartCoords.Y : FMath::Min(0, MaxEndCoords.Y + 1);
+
+				FIntPoint NewEndCoords;
+				NewEndCoords.X = MaxEndCoords.X <= MapGridDimensions.X - 1 ? MaxEndCoords.X : FMath::Max(MapGridDimensions.X - 1, MaxStartCoords.X - 1);
+				NewEndCoords.Y = MaxEndCoords.Y <= MapGridDimensions.Y - 1 ? MaxEndCoords.Y : FMath::Max(MapGridDimensions.Y - 1, MaxStartCoords.Y - 1);
 
 				// Because start and end coords are inclusive, we need to increment by 1
 				const FIntPoint MapAreaSize = NewEndCoords - NewStartCoords + FIntPoint(1, 1);
@@ -244,6 +245,11 @@ void AMinesweeperPlayerControllerBase::AddRemoveGridMapAreaCells(const FMineGrid
 				// Start with subtractive bounds first
 				for (const TCoordsBoundsTuple& SideBoundsTuple : SubtractiveBounds)
 				{
+					if (AdditiveBounds.Contains(SideBoundsTuple))
+					{
+						continue;
+					}
+
 					FIntPoint StartCoords = SideBoundsTuple.Get<0>(),
 						EndCoords = SideBoundsTuple.Get<1>();
 
@@ -261,6 +267,11 @@ void AMinesweeperPlayerControllerBase::AddRemoveGridMapAreaCells(const FMineGrid
 				// Then with additive bounds
 				for (const TCoordsBoundsTuple& SideBoundsTuple : AdditiveBounds)
 				{
+					if (SubtractiveBounds.Contains(SideBoundsTuple))
+					{
+						continue;
+					}
+
 					FIntPoint StartCoords = SideBoundsTuple.Get<0>(),
 						EndCoords = SideBoundsTuple.Get<1>();
 
@@ -285,8 +296,6 @@ void AMinesweeperPlayerControllerBase::AddRemoveGridMapAreaCells(const FMineGrid
 
 				// Update prev player coords
 				PrevPlayerRelativeGridCoords = PawnRelativeGridCoords;
-				// Reset forced update
-				bForcedAddRemoveGridCells = false;
 			}
 		}
 	}

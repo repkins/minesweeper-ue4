@@ -11,8 +11,7 @@
 #include "MinesweeperGameModeBase.generated.h"
 
 /**
- * Defines the minesweeper mode and controls it's gameplay according by Minesweeper backend 
- * using it's backend integration component.
+ * 
  */
 UCLASS()
 class MINESWEEPER_API AMinesweeperGameModeBase : public AGameModeBase
@@ -25,58 +24,45 @@ public:
 
 	AMinesweeperGameModeBase();
 
-	FORCEINLINE const FMineGridMap& GetMineGridMap() { return MinesweeperBackend->GetLastReceivedMineGridMap(); }
+	FORCEINLINE virtual const FMineGridMap& GetMineGridMap() { return MineGridMap; }
 
 	FORCEINLINE const int32 GetMineGridMapVersion() { return MineGridMapVersion; }
 
 protected:
 
-	/**
-	 * The separate integration component to use to communicate with backend
-	 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Minesweeper")
-	UMinesweeperBackendComponent* MinesweeperBackend;
+	TSet<FIntPoint> ActualMinesHidden;
 
 	/**
-	 * Store last sent coordinates with the "open" command to the backend
+	 * Current version of mine grid map
 	 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Minesweeper")
-	FIntPoint LastSentCoordsToOpen;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Minesweeper")
+	FMineGridMap MineGridMap;
 
 	/**
-	 * Stores latest version of received grid map from backend
+	 * Stores latest version number of grid map
 	 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Minesweeper")
 	int32 MineGridMapVersion;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Minesweeper")
+	class AMinesweeperPlayerControllerBase* LobbyLeader;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Minesweeper")
+	int32 RemainingClearCellCount;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Minesweeper")
 	bool bIsGameOver;
-
-	/**
-	 * The following is necessary to ensure processing only one triggered cell at a time by backend.
-	 */
-	bool bTriggeredCellProcessing;
-	TQueue<FIntPoint> RemainingCellsToProcess;
 
 	virtual void BeginPlay() override;
 
 	virtual void PostLogin(APlayerController* NewPlayer) override;
+	
+	UFUNCTION()
+	virtual void HandleOnPlayerTriggeredCoords(const FIntPoint& EnteredCoords);
+	UFUNCTION()
+	virtual void HandleOnPlayerNewGame(const uint8 MapSize);
 
-	UFUNCTION()
-	void HandleOnNewGameOk();
-	UFUNCTION()
-	void HandleOnMapOk(const FMineGridMap& NewMineGridMap);
-	UFUNCTION()
-	void HandleOnOpenOk();
-	UFUNCTION()
-	void HandleOnOpenGameOver();
-	UFUNCTION()
-	void HandleOnOpenYouWin(const FString& LevelPassword);
-	void HandleOnOpen();
-
-	UFUNCTION()
-	void HandleOnPlayerTriggeredCoords(const FIntPoint& EnteredCoords);
-	UFUNCTION()
-	void HandleOnPlayerNewGame(const uint8 MapSize);
-
+	virtual void GenerateNewMap(const uint8 MapSize);
+	virtual void OpenCell(const FIntPoint& EnteredCoords);
 };

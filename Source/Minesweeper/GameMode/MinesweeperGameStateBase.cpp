@@ -3,6 +3,8 @@
 
 #include "MinesweeperGameStateBase.h"
 
+#include "Net/UnrealNetwork.h"
+
 AMinesweeperGameStateBase::AMinesweeperGameStateBase(): Super()
 {
 	bHasExplodedCell = false;
@@ -37,4 +39,13 @@ void AMinesweeperGameStateBase::SetExplodedCell(const FIntPoint& NewExplodedCoor
 void AMinesweeperGameStateBase::UnsetExplodedCell()
 {
 	bHasExplodedCell = false;
+}
+
+void AMinesweeperGameStateBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(AMinesweeperGameStateBase, bHasExplodedCell);
+	DOREPLIFETIME(AMinesweeperGameStateBase, ExplodedCoords);
+
 }

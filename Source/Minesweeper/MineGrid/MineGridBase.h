@@ -65,6 +65,10 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "MineGrid")
 	FIntPoint GridDimensions;
 
+	// Number of holding references to cells to ensure visibility
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "MineGrid")
+	TMap<FIntPoint, uint8> GridCellRefCounts;
+
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 

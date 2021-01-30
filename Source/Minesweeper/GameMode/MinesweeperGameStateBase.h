@@ -33,6 +33,11 @@ protected:
 
 	FString LevelPassword;
 
+  UPROPERTY(Replicated)
 	bool bHasExplodedCell;
+
+	UPROPERTY(Replicated)
 	FIntPoint ExplodedCoords;
+
+	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const;
 };

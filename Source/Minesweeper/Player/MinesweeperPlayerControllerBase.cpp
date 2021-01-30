@@ -124,6 +124,13 @@ void AMinesweeperPlayerControllerBase::Tick(float DeltaSeconds)
 	}
 }
 
+void AMinesweeperPlayerControllerBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	Super::EndPlay(EndPlayReason);
+
+	ClearAllGridCells();
+}
+
 void AMinesweeperPlayerControllerBase::AddRemoveGridMapAreaCells(const FMineGridMap& MineGridMap, bool bForcedAddRemove)
 {
 	if (MineGridActor)
@@ -243,6 +250,7 @@ void AMinesweeperPlayerControllerBase::AddRemoveGridMapAreaCells(const FMineGrid
 
 				// Define removed & added cell containers
 				FMineGridMapChanges GridMapChanges;
+				GridMapChanges.NewGridDimensions = MapAreaSize;
 
 				// Start with subtractive bounds first
 				for (const TCoordsBoundsTuple& SideBoundsTuple : SubtractiveBounds)
@@ -261,7 +269,8 @@ void AMinesweeperPlayerControllerBase::AddRemoveGridMapAreaCells(const FMineGrid
 						{
 							FIntPoint Coords(X, Y);
 							MineGridMapArea.Cells.Remove(Coords);
-							GridMapChanges.RemovedGridMapCells.Emplace(Coords);
+
+							GridMapChanges.RemovedGridMapCells.AddUnique(Coords);
 						}
 					}
 				}
@@ -285,8 +294,11 @@ void AMinesweeperPlayerControllerBase::AddRemoveGridMapAreaCells(const FMineGrid
 							EMineGridMapCell CellValue = MineGridMap.Cells[Coords];
 							MineGridMapArea.Cells.Emplace(Coords, CellValue);
 
-							GridMapChanges.AddedGridMapCellCoords.Emplace(Coords);
-							GridMapChanges.AddedGridMapCellValues.Emplace(CellValue);
+							if (!GridMapChanges.AddedGridMapCellCoords.Contains(Coords))
+              {
+                GridMapChanges.AddedGridMapCellCoords.Add(Coords);
+                GridMapChanges.AddedGridMapCellValues.Add(CellValue);
+							}
 						}
 					}
 				}
@@ -303,6 +315,21 @@ void AMinesweeperPlayerControllerBase::AddRemoveGridMapAreaCells(const FMineGrid
 			}
 		}
 	}
+}
+
+void AMinesweeperPlayerControllerBase::ClearAllGridCells()
+{
+  FMineGridMapChanges GridMapChanges;
+  GridMapChanges.NewGridDimensions = FIntPoint::ZeroValue;
+
+	for (auto CellToRemove : MineGridMapArea.Cells)
+	{
+		const FIntPoint CoordsToRemoveAt = CellToRemove.Key;
+
+		GridMapChanges.RemovedGridMapCells.AddUnique(CoordsToRemoveAt);
+	}
+
+	ApplyAddedRemovedGridCells(GridMapChanges);
 }
 
 void AMinesweeperPlayerControllerBase::UpdateGridMapAreaValues(const FMineGridMap& MineGridMap)

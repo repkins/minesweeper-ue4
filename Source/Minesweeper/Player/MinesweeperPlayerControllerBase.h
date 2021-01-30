@@ -35,6 +35,9 @@ public:
 	void AddRemoveGridMapAreaCells(const FMineGridMap& MineGridMap, bool bForcedAddRemove = false);
 
 	UFUNCTION()
+	void ClearAllGridCells();
+
+	UFUNCTION()
 	void UpdateGridMapAreaValues(const FMineGridMap& MineGridMap);
 
 	UFUNCTION(Client, Reliable)
@@ -112,6 +115,8 @@ protected:
 	virtual void BeginPlay() override;
 
 	virtual void Tick(float DeltaSeconds) override;
+
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 	UFUNCTION()
 	void HandleOnTriggeredCoords(const FIntPoint& EnteredCoords);

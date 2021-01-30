@@ -43,11 +43,26 @@ void AMineGridBase::AddOrRemoveGridCells(const FMineGridMapChanges& GridMapChang
 	GridCoordsCells.Reserve(GridMapChanges.NewGridDimensions.X * GridMapChanges.NewGridDimensions.Y);
 
 	// Remove and destroy cell actors
-	for (const FIntPoint& CoordsToDestroy : GridMapChanges.RemovedGridMapCells)
+	for (const FIntPoint& RemovedCoords : GridMapChanges.RemovedGridMapCells)
 	{
-		if (AMineGridCellBase* CellActor = GridCoordsCells.FindAndRemoveChecked(CoordsToDestroy))
+		if (GridCellRefCounts[RemovedCoords] > 0)
+    {
+      GridCellRefCounts[RemovedCoords]--;
+		}
+		else
 		{
-			CellActor->Destroy();
+			UE_LOG(LogTemp, Warning, TEXT("Decrementable GridCellRefCounts[%s] is already zero."), *RemovedCoords.ToString());
+		}
+
+		// Remove and destroy actor only if has no more references
+		if (GridCellRefCounts[RemovedCoords] == 0)
+    {
+			GridCellRefCounts.Remove(RemovedCoords);
+
+      if (AMineGridCellBase* CellActor = GridCoordsCells.FindAndRemoveChecked(RemovedCoords))
+      {
+        CellActor->Destroy();
+      }
 		}
 	}
 
@@ -57,11 +72,22 @@ void AMineGridBase::AddOrRemoveGridCells(const FMineGridMapChanges& GridMapChang
 
 	for (AddedCoordsIt, AddedValuesIt; AddedCoordsIt && AddedValuesIt; ++AddedCoordsIt, ++AddedValuesIt)
 	{
-		if (AMineGridCellBase* NewCellActor = SpawnCellAt(*AddedCoordsIt))
+		if (!GridCellRefCounts.Contains(*AddedCoordsIt))
 		{
-			NewCellActor->UpdateCellValue(*AddedValuesIt);
-			GridCoordsCells.Emplace(*AddedCoordsIt, NewCellActor);
+			GridCellRefCounts.Emplace(*AddedCoordsIt, 0);
 		}
+
+		// Spawn cell only if previously has no references
+		if (GridCellRefCounts[*AddedCoordsIt] == 0)
+		{
+      if (AMineGridCellBase* NewCellActor = SpawnCellAt(*AddedCoordsIt))
+      {
+        NewCellActor->UpdateCellValue(*AddedValuesIt);
+        GridCoordsCells.Emplace(*AddedCoordsIt, NewCellActor);
+      }
+		}
+
+		GridCellRefCounts[*AddedCoordsIt]++;
 	}
 
 	// Update grid-dimensions

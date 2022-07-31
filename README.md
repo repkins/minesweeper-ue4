@@ -29,10 +29,10 @@ Developed with Unreal Engine 4
 # Solution Description
     
 Implemented the following units:
-1. GameMode class is resposible of match control. Communicates only with PlayerControllers and updates values in GameState about match state.
-2. MinesweeperPlayerController class is responsible of controlling the character, contains action bindings to methods, communicates with GameMode for match and cell opening updates. Uses MineGrid actor as a representation container of cells, telling him what exactly to represent and listening of "cell triggering" events.
-3. MineGrid class is a representational container of cells which defines the root location of cells in the game world. Spawns or destroys cell actors in response of player controller, responds to player controller about character triggering coordinates by listening to cells.
-4. MineGridCell class is a physical representation of a single cell visible in the viewport and interactable with them by player. Contains trigger box to listen for character overlapping events to initiate cell triggering event broadcast chain (up through MineGrid and PlayerController until GameMode). Responds to cell value updates by it's MineGrid container actor to update visual representation of it.
+1. `GameMode` class is resposible of match control. Communicates only with PlayerControllers and updates values in GameState about match state.
+2. `MinesweeperPlayerController` class is responsible of controlling the character, contains action bindings to methods, communicates with `GameMode` for match and cell opening updates. Uses `MineGrid` actor as a representation container of cells, telling him what exactly to represent and listening of "cell triggering" events.
+3. `MineGrid` class is a representational container of cells which defines the root location of cells in the game world. Spawns or destroys cell actors in response of player controller, responds to player controller about character triggering coordinates by listening to cells.
+4. `MineGridCell` class is a physical representation of a single cell visible in the viewport and interactable with them by player. Contains trigger box to listen for character overlapping events to initiate cell triggering event broadcast chain (up through `MineGrid` and `PlayerController` until `GameMode`). Responds to cell value updates by it's `MineGrid` container actor to update visual representation of it.
 
 Grid, Grid Cells, GameMode and PlayerController core logic are implemented natively in C++ with the possibility in blueprints to:
 - change property values or references to assets;

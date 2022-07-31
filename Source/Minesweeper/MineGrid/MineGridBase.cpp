@@ -38,39 +38,71 @@ void AMineGridBase::HandleCharacterCellTriggering(AMineGridCellBase* EnteredCell
 	}
 }
 
-void AMineGridBase::AddOrRemoveGridCells(const TMap<FIntPoint, EMineGridMapCell>& AddedGridMapCells, const TSet<FIntPoint>& RemovedGridMapCells, const FIntPoint& NewGridDimensions)
+void AMineGridBase::AddOrRemoveGridCells(const FMineGridMapChanges& GridMapChanges)
 {
-	GridCoordsCells.Reserve(NewGridDimensions.X * NewGridDimensions.Y);
+	GridCoordsCells.Reserve(GridMapChanges.NewGridDimensions.X * GridMapChanges.NewGridDimensions.Y);
 
 	// Remove and destroy cell actors
-	for (const FIntPoint& CoordsToDestroy : RemovedGridMapCells)
+	for (const FIntPoint& RemovedCoords : GridMapChanges.RemovedGridMapCells)
 	{
-		if (AMineGridCellBase* CellActor = GridCoordsCells.FindAndRemoveChecked(CoordsToDestroy))
+		if (GridCellRefCounts[RemovedCoords] > 0)
 		{
-			CellActor->Destroy();
+			GridCellRefCounts[RemovedCoords]--;
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Decrementable GridCellRefCounts[%s] is already zero."), *RemovedCoords.ToString());
+		}
+
+		// Remove and destroy actor only if has no more references
+		if (GridCellRefCounts[RemovedCoords] == 0)
+		{
+			GridCellRefCounts.Remove(RemovedCoords);
+
+			if (AMineGridCellBase* CellActor = GridCoordsCells.FindAndRemoveChecked(RemovedCoords))
+			{
+				CellActor->Destroy();
+			}
 		}
 	}
 
 	// Spawn and add cell actors
-	for (const TPair<FIntPoint, EMineGridMapCell>& CoordsCellEntryToAdd : AddedGridMapCells)
+	auto AddedCoordsIt = GridMapChanges.AddedGridMapCellCoords.CreateConstIterator();
+	auto AddedValuesIt = GridMapChanges.AddedGridMapCellValues.CreateConstIterator();
+
+	for (AddedCoordsIt, AddedValuesIt; AddedCoordsIt && AddedValuesIt; ++AddedCoordsIt, ++AddedValuesIt)
 	{
-		if (AMineGridCellBase* NewCellActor = SpawnCellAt(CoordsCellEntryToAdd.Key))
+		if (!GridCellRefCounts.Contains(*AddedCoordsIt))
 		{
-			NewCellActor->UpdateCellValue(CoordsCellEntryToAdd.Value);
-			GridCoordsCells.Emplace(CoordsCellEntryToAdd.Key, NewCellActor);
+			GridCellRefCounts.Emplace(*AddedCoordsIt, 0);
 		}
+
+		// Spawn cell only if previously has no references
+		if (GridCellRefCounts[*AddedCoordsIt] == 0)
+		{
+			if (AMineGridCellBase* NewCellActor = SpawnCellAt(*AddedCoordsIt))
+			{
+				NewCellActor->UpdateCellValue(*AddedValuesIt);
+				GridCoordsCells.Emplace(*AddedCoordsIt, NewCellActor);
+			}
+		}
+
+		GridCellRefCounts[*AddedCoordsIt]++;
 	}
 
 	// Update grid-dimensions
-	GridDimensions = NewGridDimensions;
+	GridDimensions = GridMapChanges.NewGridDimensions;
 }
 
-void AMineGridBase::UpdateCellValues(const TMap<FIntPoint, EMineGridMapCell>& UpdatedMineGridMapCells)
+void AMineGridBase::UpdateCellValues(const FMineGridMapCellUpdates& UpdatedMineGridMapCells)
 {
-	for (const TPair<FIntPoint, EMineGridMapCell>& CoordsCellEntry : UpdatedMineGridMapCells)
+	auto UpdatedCellCoordsIt = UpdatedMineGridMapCells.UpdatedGridMapCellCoords.CreateConstIterator();
+	auto UpdatedCellValuesIt = UpdatedMineGridMapCells.UpdatedGridMapCellValues.CreateConstIterator();
+
+	for (UpdatedCellCoordsIt, UpdatedCellValuesIt; UpdatedCellCoordsIt && UpdatedCellValuesIt; ++UpdatedCellCoordsIt, ++UpdatedCellValuesIt)
 	{
-		const FIntPoint Coords = CoordsCellEntry.Key;
-		const EMineGridMapCell NewCellValue = CoordsCellEntry.Value;
+		const FIntPoint Coords = *UpdatedCellCoordsIt;
+		const EMineGridMapCell NewCellValue = *UpdatedCellValuesIt;
 
 		if (AMineGridCellBase* CellActor = GridCoordsCells[Coords])
 		{

@@ -30,15 +30,15 @@ public:
 
 protected:
 	// Overlap volume to emit cell entering events
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "MineGridCell")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "MineGridCell")
 	class UBoxComponent* TriggerBox;
 
 	// In-game representation of cell
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "MineGridCell")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "MineGridCell")
 	class UStaticMeshComponent* CellMesh;
 
 	// Textual representation of cell value
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "MineGridCell")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "MineGridCell")
 	class UTextRenderComponent* ValueText;
 
 	// Material used to represent untriggered cell (undiscovered or revealed)

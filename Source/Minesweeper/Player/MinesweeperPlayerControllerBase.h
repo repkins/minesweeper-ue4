@@ -35,12 +35,15 @@ public:
 	void AddRemoveGridMapAreaCells(const FMineGridMap& MineGridMap, bool bForcedAddRemove = false);
 
 	UFUNCTION()
+	void ClearAllGridCells();
+
+	UFUNCTION()
 	void UpdateGridMapAreaValues(const FMineGridMap& MineGridMap);
 
-	UFUNCTION()
+	UFUNCTION(Client, Reliable)
 	void NotifyGameOver();
 
-	UFUNCTION()
+	UFUNCTION(Client, Reliable)
 	void NotifyGameWin();
 
 protected:
@@ -113,6 +116,8 @@ protected:
 
 	virtual void Tick(float DeltaSeconds) override;
 
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
 	UFUNCTION()
 	void HandleOnTriggeredCoords(const FIntPoint& EnteredCoords);
 
@@ -134,8 +139,14 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	void HideGameWin();
 
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Server, Reliable)
 	void SelectNewGame(const uint8 MapSize);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void ApplyAddedRemovedGridCells(const FMineGridMapChanges& GridMapChanges);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void ApplyUpdatedGridCellValues(const FMineGridMapCellUpdates& GridMapChanges);
 
 	AMineGridBase* FindMineGridActor();
 	FIntPoint GetPawnRelativeLocationOfGrid(APawn* PlayerPawn, AMineGridBase* MineGrid);

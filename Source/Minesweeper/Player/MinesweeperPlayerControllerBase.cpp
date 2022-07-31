@@ -268,7 +268,6 @@ void AMinesweeperPlayerControllerBase::AddRemoveGridMapAreaCells(const FMineGrid
 						for (int32 X = StartCoords.X; X <= EndCoords.X; ++X)
 						{
 							FIntPoint Coords(X, Y);
-							MineGridMapArea.Cells.Remove(Coords);
 
 							GridMapChanges.RemovedGridMapCells.AddUnique(Coords);
 						}
@@ -290,9 +289,8 @@ void AMinesweeperPlayerControllerBase::AddRemoveGridMapAreaCells(const FMineGrid
 					{
 						for (int32 X = StartCoords.X; X <= EndCoords.X; ++X)
 						{
-							FIntPoint Coords(X, Y);
-							EMineGridMapCell CellValue = MineGridMap.Cells[Coords];
-							MineGridMapArea.Cells.Emplace(Coords, CellValue);
+              FIntPoint Coords(X, Y);
+              EMineGridMapCell CellValue = MineGridMap.Cells[Coords];
 
 							if (!GridMapChanges.AddedGridMapCellCoords.Contains(Coords))
               {
@@ -431,6 +429,18 @@ void AMinesweeperPlayerControllerBase::SelectNewGame_Implementation(const uint8 
 
 void AMinesweeperPlayerControllerBase::ApplyAddedRemovedGridCells_Implementation(const FMineGridMapChanges& GridMapChanges)
 {
+	for (const FIntPoint& RemovedCellCoords : GridMapChanges.RemovedGridMapCells)
+  {
+    MineGridMapArea.Cells.Remove(RemovedCellCoords);
+	}
+
+  auto AddedCoordsIt = GridMapChanges.AddedGridMapCellCoords.CreateConstIterator();
+  auto AddedValuesIt = GridMapChanges.AddedGridMapCellValues.CreateConstIterator();
+	for (AddedCoordsIt, AddedValuesIt; AddedCoordsIt && AddedValuesIt; ++AddedCoordsIt, ++AddedValuesIt)
+  {
+    MineGridMapArea.Cells.Emplace(*AddedCoordsIt, *AddedValuesIt);
+	}
+
 	if (MineGridActor)
 	{
 		MineGridActor->AddOrRemoveGridCells(GridMapChanges);

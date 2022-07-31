@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
+#include "Minesweeper/Includes/MineGridMap.h"
 #include "Minesweeper/MineGrid/MineGridBase.h"
 
 #include "MinesweeperPlayerControllerBase.generated.h"

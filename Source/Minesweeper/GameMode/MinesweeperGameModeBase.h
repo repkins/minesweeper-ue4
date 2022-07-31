@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
 
-#include "Minesweeper/Backend/MinesweeperBackendComponent.h"
+#include "Minesweeper/Includes/MineGridMap.h"
 #include "Minesweeper/MineGrid/MineGridBase.h"
 
 #include "MinesweeperGameModeBase.generated.h"

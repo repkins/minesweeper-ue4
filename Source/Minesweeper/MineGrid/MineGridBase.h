@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "Minesweeper/Backend/MinesweeperBackendComponent.h"
 #include "Minesweeper/Includes/MineGridMapChanges.h"
 #include "MineGridCellBase.h"
 

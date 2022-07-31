@@ -11,7 +11,7 @@
 #include "MinesweeperGameModeBase.generated.h"
 
 /**
- * 
+ * Defines the minesweeper mode and responsable for course of matches.
  */
 UCLASS()
 class MINESWEEPER_API AMinesweeperGameModeBase : public AGameModeBase

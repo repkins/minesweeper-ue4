@@ -33,7 +33,7 @@ protected:
 
 	FString LevelPassword;
 
-  UPROPERTY(Replicated)
+	UPROPERTY(Replicated)
 	bool bHasExplodedCell;
 
 	UPROPERTY(Replicated)

@@ -3,7 +3,6 @@
 
 #include "MinesweeperPlayerControllerBase.h"
 #include "EngineUtils.h"
-#include "Blueprint/UserWidget.h"
 #include "Minesweeper/GameMode/MinesweeperGameModeBase.h"
 #include "Minesweeper/GameMode/MinesweeperGameStateBase.h"
 
@@ -13,9 +12,6 @@ AMinesweeperPlayerControllerBase::AMinesweeperPlayerControllerBase(): Super()
 	bAllowTickBeforeBeginPlay = false;
 
 	MineGridClass = AMineGridBase::StaticClass();
-	bNewGameMenuVisible = false;
-	bGameOverVisible = false;
-	bGameWinVisible = false;
 
 	MapAreaMaxHalfSizeX = 7;
 	MapAreaMaxHalfSizeY = 4;
@@ -26,43 +22,17 @@ AMinesweeperPlayerControllerBase::AMinesweeperPlayerControllerBase(): Super()
 
 void AMinesweeperPlayerControllerBase::NotifyGameOver_Implementation()
 {
-	ShowGameOver();
+	OnNotifyGameOver.Broadcast();
 }
 
 void AMinesweeperPlayerControllerBase::NotifyGameWin_Implementation()
 {
-	ShowGameWin();
+	OnNotifyGameWin.Broadcast();
 }
 
 void AMinesweeperPlayerControllerBase::BeginPlay()
 {
 	Super::BeginPlay();
-
-	// Creates widgets if controller is local
-	if (IsLocalController())
-	{
-		if (NewGameWidgetClass) {
-			NewGameWidget = CreateWidget<UUserWidget>(this, NewGameWidgetClass);
-			if (NewGameWidget) {
-				NewGameWidget->AddToViewport();
-				NewGameWidget->SetVisibility(ESlateVisibility::Hidden);
-			}
-		}
-		if (GameOverWidgetClass) {
-			GameOverWidget = CreateWidget<UUserWidget>(this, GameOverWidgetClass);
-			if (GameOverWidget) {
-				GameOverWidget->AddToViewport();
-				GameOverWidget->SetVisibility(ESlateVisibility::Hidden);
-			}
-		}
-		if (GameWinWidgetClass) {
-			GameWinWidget = CreateWidget<UUserWidget>(this, GameWinWidgetClass);
-			if (GameWinWidget) {
-				GameWinWidget->AddToViewport();
-				GameWinWidget->SetVisibility(ESlateVisibility::Hidden);
-			}
-		}
-	}
 
 	// Finding grid actor
 	MineGridActor = FindMineGridActor();
@@ -156,9 +126,6 @@ void AMinesweeperPlayerControllerBase::AddRemoveGridMapAreaCells(const FMineGrid
 				MineGridMapArea.Cells.Reserve(MapAreaMaxSize.X * MapAreaMaxSize.Y);
 
 				// Determine valid starting & endings coords of map "visible" area
-				//const FIntPoint NewStartCoords = FIntPoint(FMath::Clamp(MaxStartCoords.X, 0, MapGridDimensions.X), FMath::Clamp(MaxStartCoords.Y, 0, MapGridDimensions.Y));
-				//const FIntPoint NewEndCoords = FIntPoint(FMath::Clamp(MaxEndCoords.X, -1, MapGridDimensions.X - 1), FMath::Clamp(MaxEndCoords.Y, -1, MapGridDimensions.Y - 1));
-
 				FIntPoint NewStartCoords;
 				NewStartCoords.X = MaxStartCoords.X >= 0 ? MaxStartCoords.X : FMath::Min(0, MaxEndCoords.X + 1);
 				NewStartCoords.Y = MaxStartCoords.Y >= 0 ? MaxStartCoords.Y : FMath::Min(0, MaxEndCoords.Y + 1);
@@ -289,13 +256,13 @@ void AMinesweeperPlayerControllerBase::AddRemoveGridMapAreaCells(const FMineGrid
 					{
 						for (int32 X = StartCoords.X; X <= EndCoords.X; ++X)
 						{
-              FIntPoint Coords(X, Y);
-              EMineGridMapCell CellValue = MineGridMap.Cells[Coords];
+							FIntPoint Coords(X, Y);
+							EMineGridMapCell CellValue = MineGridMap.Cells[Coords];
 
 							if (!GridMapChanges.AddedGridMapCellCoords.Contains(Coords))
-              {
-                GridMapChanges.AddedGridMapCellCoords.Add(Coords);
-                GridMapChanges.AddedGridMapCellValues.Add(CellValue);
+							{
+								GridMapChanges.AddedGridMapCellCoords.Add(Coords);
+								GridMapChanges.AddedGridMapCellValues.Add(CellValue);
 							}
 						}
 					}
@@ -317,8 +284,8 @@ void AMinesweeperPlayerControllerBase::AddRemoveGridMapAreaCells(const FMineGrid
 
 void AMinesweeperPlayerControllerBase::ClearAllGridCells()
 {
-  FMineGridMapChanges GridMapChanges;
-  GridMapChanges.NewGridDimensions = FIntPoint::ZeroValue;
+	FMineGridMapChanges GridMapChanges;
+	GridMapChanges.NewGridDimensions = FIntPoint::ZeroValue;
 
 	for (auto CellToRemove : MineGridMapArea.Cells)
 	{
@@ -356,72 +323,6 @@ void AMinesweeperPlayerControllerBase::HandleOnTriggeredCoords(const FIntPoint& 
 	OnPlayerTriggeredCoords.Broadcast(EnteredCoords);
 }
 
-void AMinesweeperPlayerControllerBase::ShowNewGameMenu()
-{
-	if (NewGameWidget)
-	{
-		NewGameWidget->SetVisibility(ESlateVisibility::Visible);
-		SetInputMode(FInputModeGameAndUI());
-		SetShowMouseCursor(true);
-		bNewGameMenuVisible = true;
-	}
-}
-
-void AMinesweeperPlayerControllerBase::HideNewGameMenu()
-{
-	if (NewGameWidget)
-	{
-		NewGameWidget->SetVisibility(ESlateVisibility::Hidden);
-		SetInputMode(FInputModeGameOnly());
-		SetShowMouseCursor(false);
-		bNewGameMenuVisible = false;
-	}
-}
-
-void AMinesweeperPlayerControllerBase::ShowGameOver()
-{
-	if (GameOverWidget)
-	{
-		GameOverWidget->SetVisibility(ESlateVisibility::Visible);
-		SetInputMode(FInputModeGameAndUI());
-		SetShowMouseCursor(true);
-		bGameOverVisible = true;
-	}
-}
-
-void AMinesweeperPlayerControllerBase::HideGameOver()
-{
-	if (GameOverWidget)
-	{
-		GameOverWidget->SetVisibility(ESlateVisibility::Hidden);
-		SetInputMode(FInputModeGameOnly());
-		SetShowMouseCursor(false);
-		bGameOverVisible = false;
-	}
-}
-
-void AMinesweeperPlayerControllerBase::ShowGameWin()
-{
-	if (GameWinWidget)
-	{
-		GameWinWidget->SetVisibility(ESlateVisibility::Visible);
-		SetInputMode(FInputModeGameAndUI());
-		SetShowMouseCursor(true);
-		bGameWinVisible = true;
-	}
-}
-
-void AMinesweeperPlayerControllerBase::HideGameWin()
-{
-	if (GameWinWidget)
-	{
-		GameWinWidget->SetVisibility(ESlateVisibility::Hidden);
-		SetInputMode(FInputModeGameOnly());
-		SetShowMouseCursor(false);
-		bGameWinVisible = false;
-	}
-}
-
 void AMinesweeperPlayerControllerBase::SelectNewGame_Implementation(const uint8 MapSize)
 {
 	OnPlayerNewGame.Broadcast(MapSize);
@@ -430,15 +331,15 @@ void AMinesweeperPlayerControllerBase::SelectNewGame_Implementation(const uint8 
 void AMinesweeperPlayerControllerBase::ApplyAddedRemovedGridCells_Implementation(const FMineGridMapChanges& GridMapChanges)
 {
 	for (const FIntPoint& RemovedCellCoords : GridMapChanges.RemovedGridMapCells)
-  {
-    MineGridMapArea.Cells.Remove(RemovedCellCoords);
+	{
+		MineGridMapArea.Cells.Remove(RemovedCellCoords);
 	}
 
-  auto AddedCoordsIt = GridMapChanges.AddedGridMapCellCoords.CreateConstIterator();
-  auto AddedValuesIt = GridMapChanges.AddedGridMapCellValues.CreateConstIterator();
+	auto AddedCoordsIt = GridMapChanges.AddedGridMapCellCoords.CreateConstIterator();
+	auto AddedValuesIt = GridMapChanges.AddedGridMapCellValues.CreateConstIterator();
 	for (AddedCoordsIt, AddedValuesIt; AddedCoordsIt && AddedValuesIt; ++AddedCoordsIt, ++AddedValuesIt)
-  {
-    MineGridMapArea.Cells.Emplace(*AddedCoordsIt, *AddedValuesIt);
+	{
+		MineGridMapArea.Cells.Emplace(*AddedCoordsIt, *AddedValuesIt);
 	}
 
 	if (MineGridActor)

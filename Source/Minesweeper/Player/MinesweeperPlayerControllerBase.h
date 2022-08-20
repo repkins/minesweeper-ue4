@@ -33,7 +33,7 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FOnPlayerTriggeredCoordsDelegate OnPlayerTriggeredCoords;
 
-	UPROPERTY(BlueprintAssignable)
+	UPROPERTY(BlueprintAssignable, BlueprintCallable)
 	FOnToggleGameMenuDelegate OnToggleGameMenu;
 
 	UPROPERTY(BlueprintAssignable)

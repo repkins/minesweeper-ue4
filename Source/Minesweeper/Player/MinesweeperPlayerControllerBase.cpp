@@ -5,12 +5,14 @@
 #include "EngineUtils.h"
 #include "Minesweeper/GameMode/MinesweeperGameModeBase.h"
 #include "Minesweeper/GameMode/MinesweeperGameStateBase.h"
+#include "Minesweeper/HUD/MinesweeperHUDBase.h"
 
 AMinesweeperPlayerControllerBase::AMinesweeperPlayerControllerBase(): Super()
 {
 	PrimaryActorTick.bCanEverTick = true;
 	bAllowTickBeforeBeginPlay = false;
 
+	bIsLobbyLeader = false;
 	MineGridClass = AMineGridBase::StaticClass();
 
 	MapAreaMaxHalfSizeX = 7;
@@ -20,14 +22,29 @@ AMinesweeperPlayerControllerBase::AMinesweeperPlayerControllerBase(): Super()
 	GridMapAreaVersion = 0;
 }
 
+void AMinesweeperPlayerControllerBase::NotifyGameStarted_Implementation()
+{
+	if (auto MinesweeperHUD = Cast<AMinesweeperHUDBase>(MyHUD))
+	{
+		MinesweeperHUD->HideGameOver();
+		MinesweeperHUD->HideGameWin();
+	}
+}
+
 void AMinesweeperPlayerControllerBase::NotifyGameOver_Implementation()
 {
-	OnNotifyGameOver.Broadcast();
+	if (auto MinesweeperHUD = Cast<AMinesweeperHUDBase>(MyHUD))
+	{
+		MinesweeperHUD->ShowGameOver();
+	}
 }
 
 void AMinesweeperPlayerControllerBase::NotifyGameWin_Implementation()
 {
-	OnNotifyGameWin.Broadcast();
+	if (auto MinesweeperHUD = Cast<AMinesweeperHUDBase>(MyHUD))
+	{
+		MinesweeperHUD->ShowGameWin();
+	}
 }
 
 void AMinesweeperPlayerControllerBase::BeginPlay()
@@ -91,6 +108,19 @@ void AMinesweeperPlayerControllerBase::Tick(float DeltaSeconds)
 		{
 			MineGridActor->SetGridCellExploded(MinesweeperState->GetExplodedCoords());
 		}
+		else
+		{
+			auto LastExplodedCoords = MinesweeperState->GetExplodedCoords();
+
+			if (MineGridMapArea.Cells.Contains(LastExplodedCoords))
+			{
+				FMineGridMapCellUpdates CellUpdate;
+				CellUpdate.UpdatedGridMapCellCoords.Emplace(LastExplodedCoords);
+				CellUpdate.UpdatedGridMapCellValues.Emplace(MineGridMapArea.Cells[LastExplodedCoords]);
+
+				MineGridActor->UpdateCellValues(CellUpdate);
+			}
+		}
 	}
 }
 
@@ -121,7 +151,7 @@ void AMinesweeperPlayerControllerBase::AddRemoveGridMapAreaCells(const FMineGrid
 				const FIntPoint MaxStartCoords = PawnRelativeGridCoords - MapAreaMaxHalfSize;
 				const FIntPoint MaxEndCoords = PawnRelativeGridCoords + MapAreaMaxHalfSize + FIntPoint(1, 1);
 
-				// Allocate max size
+				// Allocate max size of authoritive mines area
 				const FIntPoint MapAreaMaxSize = MaxEndCoords - MaxStartCoords + FIntPoint(1, 1);
 				MineGridMapArea.Cells.Reserve(MapAreaMaxSize.X * MapAreaMaxSize.Y);
 
@@ -308,8 +338,6 @@ void AMinesweeperPlayerControllerBase::UpdateGridMapAreaValues(const FMineGridMa
 
 		if (CoordsCellEntry.Value != NewCellValue)
 		{
-			CoordsCellEntry.Value = NewCellValue;
-
 			CellsUpdate.UpdatedGridMapCellCoords.Emplace(Coords);
 			CellsUpdate.UpdatedGridMapCellValues.Emplace(NewCellValue);
 		}
@@ -350,6 +378,13 @@ void AMinesweeperPlayerControllerBase::ApplyAddedRemovedGridCells_Implementation
 
 void AMinesweeperPlayerControllerBase::ApplyUpdatedGridCellValues_Implementation(const FMineGridMapCellUpdates& UpdatedCells)
 {
+	auto UpdatedCoordsIt = UpdatedCells.UpdatedGridMapCellCoords.CreateConstIterator();
+	auto UpdatedValuesIt = UpdatedCells.UpdatedGridMapCellValues.CreateConstIterator();
+	for (UpdatedCoordsIt, UpdatedValuesIt; UpdatedCoordsIt && UpdatedValuesIt; ++UpdatedCoordsIt, ++UpdatedValuesIt)
+	{
+		MineGridMapArea.Cells[*UpdatedCoordsIt] = *UpdatedValuesIt;
+	}
+
 	if (MineGridActor)
 	{
 		MineGridActor->UpdateCellValues(UpdatedCells);

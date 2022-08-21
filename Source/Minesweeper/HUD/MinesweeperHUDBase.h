@@ -18,6 +18,24 @@ class MINESWEEPER_API AMinesweeperHUDBase : public AHUD
 public:
 
 	AMinesweeperHUDBase();
+	
+	UFUNCTION(BlueprintCallable)
+	void ShowNewGameMenu();
+
+	UFUNCTION(BlueprintCallable)
+	void HideNewGameMenu();
+
+	UFUNCTION(BlueprintCallable)
+	void ShowGameOver();
+
+	UFUNCTION(BlueprintCallable)
+	void HideGameOver();
+
+	UFUNCTION(BlueprintCallable)
+	void ShowGameWin();
+
+	UFUNCTION(BlueprintCallable)
+	void HideGameWin();
 
 protected:
 
@@ -52,22 +70,4 @@ protected:
 	bool bGameWinVisible;
 
 	virtual void BeginPlay() override;
-	
-	UFUNCTION(BlueprintCallable)
-	void ShowNewGameMenu();
-
-	UFUNCTION(BlueprintCallable)
-	void HideNewGameMenu();
-
-	UFUNCTION(BlueprintCallable)
-	void ShowGameOver();
-
-	UFUNCTION(BlueprintCallable)
-	void HideGameOver();
-
-	UFUNCTION(BlueprintCallable)
-	void ShowGameWin();
-
-	UFUNCTION(BlueprintCallable)
-	void HideGameWin();
 };

@@ -40,7 +40,7 @@ protected:
 	FMineGridMap MineGridMap;
 
 	/**
-	 * Stores latest version number of grid map
+	 * Stores latest version number of grid map. Used for update determination.
 	 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Minesweeper")
 	int32 MineGridMapVersion;

@@ -11,14 +11,11 @@
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPlayerNewGameDelegate, const uint8, MapSize);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPlayerTriggeredCoordsDelegate, const FIntPoint&, EnteredIntoCoords);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnToggleGameMenuDelegate);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnNotifyGameOverDelegate);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnNotifyGameWinDelegate);
 
 typedef TTuple<FIntPoint, FIntPoint> TCoordsBoundsTuple;
 
 /**
- * This actor controls pawn movement, "visible" area of mine grid map.
+ * This actor controls pawn movement, "visible" area of mine grid map and HUD widgets visibility.
  */
 UCLASS()
 class MINESWEEPER_API AMinesweeperPlayerControllerBase : public APlayerController
@@ -33,16 +30,10 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FOnPlayerTriggeredCoordsDelegate OnPlayerTriggeredCoords;
 
-	UPROPERTY(BlueprintAssignable, BlueprintCallable)
-	FOnToggleGameMenuDelegate OnToggleGameMenu;
-
-	UPROPERTY(BlueprintAssignable)
-	FOnNotifyGameOverDelegate OnNotifyGameOver;
-
-	UPROPERTY(BlueprintAssignable)
-	FOnNotifyGameWinDelegate OnNotifyGameWin;
-
 	AMinesweeperPlayerControllerBase();
+
+	FORCEINLINE const bool GetIsLobbyLeader() { return bIsLobbyLeader; }
+	FORCEINLINE const void SetIsLobbyLeader(bool value) { bIsLobbyLeader = value; }
 
 	UFUNCTION()
 	void AddRemoveGridMapAreaCells(const FMineGridMap& MineGridMap, bool bForcedAddRemove = false);
@@ -54,12 +45,19 @@ public:
 	void UpdateGridMapAreaValues(const FMineGridMap& MineGridMap);
 
 	UFUNCTION(Client, Reliable)
+	void NotifyGameStarted();
+
+	UFUNCTION(Client, Reliable)
 	void NotifyGameOver();
 
 	UFUNCTION(Client, Reliable)
 	void NotifyGameWin();
 
 protected:
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Minesweeper")
+	bool bIsLobbyLeader;
+
 	/**
 	 * The class of MineGridClass to lookup in world for representation of mine grid data in it
 	 * and listening for "enter" events from.
@@ -103,7 +101,7 @@ protected:
 	UFUNCTION()
 	void HandleOnTriggeredCoords(const FIntPoint& EnteredCoords);
 
-	UFUNCTION(BlueprintCallable, Server, Reliable)
+	UFUNCTION(Server, Reliable, BlueprintCallable)
 	void SelectNewGame(const uint8 MapSize);
 
 	UFUNCTION(NetMulticast, Reliable)

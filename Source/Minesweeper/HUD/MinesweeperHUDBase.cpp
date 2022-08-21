@@ -41,17 +41,6 @@ void AMinesweeperHUDBase::BeginPlay()
 			GameWinWidget->SetVisibility(ESlateVisibility::Hidden);
 		}
 	}
-
-	//
-	// Bind to player controller delegates to widgets logic
-	//
-
-	auto MinesweeperPlayerOwner = Cast<AMinesweeperPlayerControllerBase>(PlayerOwner);
-	if (MinesweeperPlayerOwner)
-	{
-		MinesweeperPlayerOwner->OnNotifyGameOver.AddDynamic(this, &AMinesweeperHUDBase::ShowGameOver);
-		MinesweeperPlayerOwner->OnNotifyGameWin.AddDynamic(this, &AMinesweeperHUDBase::ShowGameWin);
-	}
 }
 
 void AMinesweeperHUDBase::ShowNewGameMenu()

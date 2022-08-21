@@ -34,6 +34,11 @@ void AMinesweeperGameModeBase::PostLogin(APlayerController* NewPlayer)
 		if (!IsValid(LobbyLeader))
 		{
 			LobbyLeader = NewMinesweeperPlayer;
+			NewMinesweeperPlayer->SetIsLobbyLeader(true);
+		}
+		else
+		{
+			NewMinesweeperPlayer->SetIsLobbyLeader(false);
 		}
 	}
 }
@@ -80,6 +85,10 @@ void AMinesweeperGameModeBase::OpenCell(const FIntPoint& EnteredCoords)
 	}
 	else
 	{
+		// 
+		// Use of queue to automatically open nearby cells if opened cell with no mines around it
+		//
+
 		TQueue<FIntPoint> RemainingCells;
 		RemainingCells.Enqueue(EnteredCoords);
 
@@ -87,7 +96,6 @@ void AMinesweeperGameModeBase::OpenCell(const FIntPoint& EnteredCoords)
 
 		TArray<FIntPoint> SurroundingCellCoordsList;
 		SurroundingCellCoordsList.Reserve(8);
-
 		while (RemainingCells.Dequeue(RemainingCellCoords))
 		{
 			if (MineGridMap.Cells[RemainingCellCoords] != EMineGridMapCell::MGMC_Undiscovered)
@@ -159,6 +167,9 @@ void AMinesweeperGameModeBase::HandleOnPlayerNewGame(const uint8 MapSize)
 
 			// Update GridMapArea values
 			MinesweeperPlayer->UpdateGridMapAreaValues(MineGridMap);
+
+			// Notify clients that game is started
+			MinesweeperPlayer->NotifyGameStarted();
 		}
 	}
 }

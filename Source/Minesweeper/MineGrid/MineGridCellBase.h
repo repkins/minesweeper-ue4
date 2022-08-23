@@ -25,9 +25,6 @@ public:
 	UFUNCTION()
 	void UpdateCellValue(const EMineGridMapCell& NewCellValue);
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
-	void SetCellExploded();
-
 protected:
 	// Overlap volume to emit cell entering events
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "MineGridCell")

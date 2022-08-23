@@ -15,7 +15,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPlayerTriggeredCoordsDelegate, co
 typedef TTuple<FIntPoint, FIntPoint> TCoordsBoundsTuple;
 
 /**
- * This actor controls pawn movement, "visible" area of mine grid map and HUD widgets visibility
+ * This actor controls pawn movement, "visible" area of mine grid map and HUD widgets visibility.
  */
 UCLASS()
 class MINESWEEPER_API AMinesweeperPlayerControllerBase : public APlayerController
@@ -32,6 +32,9 @@ public:
 
 	AMinesweeperPlayerControllerBase();
 
+	FORCEINLINE const bool GetIsLobbyLeader() { return bIsLobbyLeader; }
+	FORCEINLINE const void SetIsLobbyLeader(bool value) { bIsLobbyLeader = value; }
+
 	UFUNCTION()
 	void AddRemoveGridMapAreaCells(const FMineGridMap& MineGridMap, bool bForcedAddRemove = false);
 
@@ -39,7 +42,10 @@ public:
 	void ClearAllGridCells();
 
 	UFUNCTION()
-	void UpdateGridMapAreaValues(const FMineGridMap& MineGridMap);
+	void UpdateGridMapAreaCellValues(const FMineGridMap& MineGridMap);
+
+	UFUNCTION(Client, Reliable)
+	void NotifyGameStarted();
 
 	UFUNCTION(Client, Reliable)
 	void NotifyGameOver();
@@ -48,6 +54,10 @@ public:
 	void NotifyGameWin();
 
 protected:
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Minesweeper")
+	bool bIsLobbyLeader;
+
 	/**
 	 * The class of MineGridClass to lookup in world for representation of mine grid data in it
 	 * and listening for "enter" events from.
@@ -82,37 +92,6 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Minesweeper|Grid")
 	int32 GridMapAreaVersion;
 
-	// 
-	// UI Widgets
-	// 
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Minesweeper|HUD")
-	TSubclassOf<class UUserWidget> NewGameWidgetClass;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Minesweeper|HUD")
-	class UUserWidget* NewGameWidget;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Minesweeper|HUD")
-	bool bNewGameMenuVisible;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Minesweeper|HUD")
-	TSubclassOf<class UUserWidget> GameOverWidgetClass;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Minesweeper|HUD")
-	class UUserWidget* GameOverWidget;
-	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Minesweeper|HUD")
-	bool bGameOverVisible;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Minesweeper|HUD")
-	TSubclassOf<class UUserWidget> GameWinWidgetClass;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Minesweeper|HUD")
-	class UUserWidget* GameWinWidget;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Minesweeper|HUD")
-	bool bGameWinVisible;
-
 	virtual void BeginPlay() override;
 
 	virtual void Tick(float DeltaSeconds) override;
@@ -122,25 +101,7 @@ protected:
 	UFUNCTION()
 	void HandleOnTriggeredCoords(const FIntPoint& EnteredCoords);
 
-	UFUNCTION(BlueprintCallable)
-	void ShowNewGameMenu();
-
-	UFUNCTION(BlueprintCallable)
-	void HideNewGameMenu();
-
-	UFUNCTION(BlueprintCallable)
-	void ShowGameOver();
-
-	UFUNCTION(BlueprintCallable)
-	void HideGameOver();
-
-	UFUNCTION(BlueprintCallable)
-	void ShowGameWin();
-
-	UFUNCTION(BlueprintCallable)
-	void HideGameWin();
-
-	UFUNCTION(BlueprintCallable, Server, Reliable)
+	UFUNCTION(Server, Reliable, BlueprintCallable)
 	void SelectNewGame(const uint8 MapSize);
 
 	UFUNCTION(NetMulticast, Reliable)

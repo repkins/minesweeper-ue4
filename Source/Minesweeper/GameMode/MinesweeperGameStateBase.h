@@ -18,26 +18,12 @@ public:
 	UFUNCTION(BlueprintCallable)
 	FString GetLevelPassword();
 
-	UFUNCTION(BlueprintCallable)
-	bool HasExplodedCell();
-
-	UFUNCTION(BlueprintCallable)
-	FIntPoint GetExplodedCoords();
-
 	void SetLevelPassword(const FString& NewLevelPassword);
-
-	void SetExplodedCell(const FIntPoint& ExplodedCoords);
-	void UnsetExplodedCell();
 
 protected:
 
+	UPROPERTY(Replicated)
 	FString LevelPassword;
-
-	UPROPERTY(Replicated)
-	bool bHasExplodedCell;
-
-	UPROPERTY(Replicated)
-	FIntPoint ExplodedCoords;
 
 	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const;
 };

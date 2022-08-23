@@ -111,18 +111,6 @@ void AMineGridBase::UpdateCellValues(const FMineGridMapCellUpdates& UpdatedMineG
 	}
 }
 
-void AMineGridBase::SetGridCellExploded(const FIntPoint& ExplodedCoords)
-{
-	AMineGridCellBase** FoundGridCellPtr = GridCoordsCells.Find(ExplodedCoords);
-	if (FoundGridCellPtr)
-	{
-		AMineGridCellBase* GridCellToExploded = *FoundGridCellPtr;
-
-		// Tell our cell actor to update representation of exploded cell
-		GridCellToExploded->SetCellExploded();
-	}
-}
-
 // Called when the game starts or when spawned
 void AMineGridBase::BeginPlay()
 {

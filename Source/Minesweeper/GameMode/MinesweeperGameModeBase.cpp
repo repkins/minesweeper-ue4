@@ -34,6 +34,11 @@ void AMinesweeperGameModeBase::PostLogin(APlayerController* NewPlayer)
 		if (!IsValid(LobbyLeader))
 		{
 			LobbyLeader = NewMinesweeperPlayer;
+			NewMinesweeperPlayer->SetIsLobbyLeader(true);
+		}
+		else
+		{
+			NewMinesweeperPlayer->SetIsLobbyLeader(false);
 		}
 	}
 }
@@ -61,14 +66,14 @@ void AMinesweeperGameModeBase::OpenCell(const FIntPoint& EnteredCoords)
 {
 	if (ActualMinesHidden.Contains(EnteredCoords))
 	{
-		MineGridMap.Cells.Emplace(EnteredCoords, EMineGridMapCell::MGMC_Revealed);
+		// Assign revealed state of cells containg all remaining mines and set opening cell exploded
+		for (FIntPoint HiddenMineCoords : ActualMinesHidden)
+		{
+			MineGridMap.Cells.Emplace(HiddenMineCoords, EMineGridMapCell::MGMC_Revealed);
+		}
+		MineGridMap.Cells.Emplace(EnteredCoords, EMineGridMapCell::MGMC_Exploded);
 
 		bIsGameOver = true;
-
-		if (AMinesweeperGameStateBase* MinesweeperState = GetGameState<AMinesweeperGameStateBase>())
-		{
-			MinesweeperState->SetExplodedCell(EnteredCoords);
-		}
 
 		for (FConstPlayerControllerIterator PlayerIt = GetWorld()->GetPlayerControllerIterator(); PlayerIt; ++PlayerIt)
 		{
@@ -80,6 +85,10 @@ void AMinesweeperGameModeBase::OpenCell(const FIntPoint& EnteredCoords)
 	}
 	else
 	{
+		// 
+		// Use of queue to automatically open nearby cells if opened cell with no mines around it
+		//
+
 		TQueue<FIntPoint> RemainingCells;
 		RemainingCells.Enqueue(EnteredCoords);
 
@@ -87,27 +96,30 @@ void AMinesweeperGameModeBase::OpenCell(const FIntPoint& EnteredCoords)
 
 		TArray<FIntPoint> SurroundingCellCoordsList;
 		SurroundingCellCoordsList.Reserve(8);
-
 		while (RemainingCells.Dequeue(RemainingCellCoords))
 		{
+			// Skip if cell is already opened
 			if (MineGridMap.Cells[RemainingCellCoords] != EMineGridMapCell::MGMC_Undiscovered)
 			{
 				continue;
 			}
 
+			// Determine bounds of surrounding cells
 			FIntPoint StartValidSurroundingCoords(FMath::Clamp(RemainingCellCoords.X - 1, MineGridMap.StartCoords.X, MineGridMap.EndCoords.X),
 				FMath::Clamp(RemainingCellCoords.Y - 1, MineGridMap.StartCoords.Y, MineGridMap.EndCoords.Y));
 			FIntPoint EndValidSurroundingCoords(FMath::Clamp(RemainingCellCoords.X + 1, MineGridMap.StartCoords.X, MineGridMap.EndCoords.X),
 				FMath::Clamp(RemainingCellCoords.Y + 1, MineGridMap.StartCoords.Y, MineGridMap.EndCoords.Y));
 
 			SurroundingCellCoordsList.Reset();
-
 			uint8 MinesCount = 0;
+
+			// Iterate through every surrounding cell to count mines
 			for (int32 Y = StartValidSurroundingCoords.Y; Y <= EndValidSurroundingCoords.Y; Y++)
 			{
 				for (int32 X = StartValidSurroundingCoords.X; X <= EndValidSurroundingCoords.X; X++)
 				{
 					FIntPoint CellCoords(X, Y);
+
 					if (CellCoords == RemainingCellCoords)
 					{
 						continue;
@@ -122,9 +134,11 @@ void AMinesweeperGameModeBase::OpenCell(const FIntPoint& EnteredCoords)
 				}
 			}
 
+			// Assign number of mines to cell value and decrement number of clear cells
 			MineGridMap.Cells.Emplace(RemainingCellCoords, (EMineGridMapCell)MinesCount);
 			RemainingClearCellCount -= 1;
 
+			// Add every surround cell if processed cell shows zero mines number
 			if (MinesCount == 0)
 			{
 				for (FIntPoint SurroundingCellCoords : SurroundingCellCoordsList)
@@ -142,11 +156,6 @@ void AMinesweeperGameModeBase::HandleOnPlayerNewGame(const uint8 MapSize)
 {
 	bIsGameOver = false;
 
-	if (AMinesweeperGameStateBase* MinesweeperState = GetGameState<AMinesweeperGameStateBase>())
-	{
-		MinesweeperState->UnsetExplodedCell();
-	}
-
 	GenerateNewMap(MapSize);
 	MineGridMapVersion = 0;
 
@@ -154,11 +163,12 @@ void AMinesweeperGameModeBase::HandleOnPlayerNewGame(const uint8 MapSize)
 	{
 		if (auto MinesweeperPlayer = Cast<AMinesweeperPlayerControllerBase>(*PlayerIt))
 		{
-			// Force add/remove cells
+			// Force update mines area of player even if player didn't moved between cells and reset cell values
 			MinesweeperPlayer->AddRemoveGridMapAreaCells(MineGridMap, true);
+			MinesweeperPlayer->UpdateGridMapAreaCellValues(MineGridMap);
 
-			// Update GridMapArea values
-			MinesweeperPlayer->UpdateGridMapAreaValues(MineGridMap);
+			// Notify clients that game is started
+			MinesweeperPlayer->NotifyGameStarted();
 		}
 	}
 }

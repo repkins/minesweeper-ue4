@@ -40,10 +40,6 @@ public:
 	UFUNCTION()
 	void UpdateCellValues(const FMineGridMapCellUpdates& UpdatedMineGridMapCells);
 
-	// Tell grid actor to set cell as exploded
-	UFUNCTION()
-	void SetGridCellExploded(const FIntPoint& ExplodedCoords);
-
 	FORCEINLINE float GetCellSize() { return CellSize; }
 
 protected:

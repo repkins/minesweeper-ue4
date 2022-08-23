@@ -3,19 +3,17 @@
 
 #include "MinesweeperPlayerControllerBase.h"
 #include "EngineUtils.h"
-#include "Blueprint/UserWidget.h"
 #include "Minesweeper/GameMode/MinesweeperGameModeBase.h"
 #include "Minesweeper/GameMode/MinesweeperGameStateBase.h"
+#include "Minesweeper/HUD/MinesweeperHUDBase.h"
 
 AMinesweeperPlayerControllerBase::AMinesweeperPlayerControllerBase(): Super()
 {
 	PrimaryActorTick.bCanEverTick = true;
 	bAllowTickBeforeBeginPlay = false;
 
+	bIsLobbyLeader = false;
 	MineGridClass = AMineGridBase::StaticClass();
-	bNewGameMenuVisible = false;
-	bGameOverVisible = false;
-	bGameWinVisible = false;
 
 	MapAreaMaxHalfSizeX = 7;
 	MapAreaMaxHalfSizeY = 4;
@@ -24,45 +22,34 @@ AMinesweeperPlayerControllerBase::AMinesweeperPlayerControllerBase(): Super()
 	GridMapAreaVersion = 0;
 }
 
+void AMinesweeperPlayerControllerBase::NotifyGameStarted_Implementation()
+{
+	if (auto MinesweeperHUD = Cast<AMinesweeperHUDBase>(MyHUD))
+	{
+		MinesweeperHUD->HideGameOver();
+		MinesweeperHUD->HideGameWin();
+	}
+}
+
 void AMinesweeperPlayerControllerBase::NotifyGameOver_Implementation()
 {
-	ShowGameOver();
+	if (auto MinesweeperHUD = Cast<AMinesweeperHUDBase>(MyHUD))
+	{
+		MinesweeperHUD->ShowGameOver();
+	}
 }
 
 void AMinesweeperPlayerControllerBase::NotifyGameWin_Implementation()
 {
-	ShowGameWin();
+	if (auto MinesweeperHUD = Cast<AMinesweeperHUDBase>(MyHUD))
+	{
+		MinesweeperHUD->ShowGameWin();
+	}
 }
 
 void AMinesweeperPlayerControllerBase::BeginPlay()
 {
 	Super::BeginPlay();
-
-	// Creates widgets if controller is local
-	if (IsLocalController())
-	{
-		if (NewGameWidgetClass) {
-			NewGameWidget = CreateWidget<UUserWidget>(this, NewGameWidgetClass);
-			if (NewGameWidget) {
-				NewGameWidget->AddToViewport();
-				NewGameWidget->SetVisibility(ESlateVisibility::Hidden);
-			}
-		}
-		if (GameOverWidgetClass) {
-			GameOverWidget = CreateWidget<UUserWidget>(this, GameOverWidgetClass);
-			if (GameOverWidget) {
-				GameOverWidget->AddToViewport();
-				GameOverWidget->SetVisibility(ESlateVisibility::Hidden);
-			}
-		}
-		if (GameWinWidgetClass) {
-			GameWinWidget = CreateWidget<UUserWidget>(this, GameWinWidgetClass);
-			if (GameWinWidget) {
-				GameWinWidget->AddToViewport();
-				GameWinWidget->SetVisibility(ESlateVisibility::Hidden);
-			}
-		}
-	}
 
 	// Finding grid actor
 	MineGridActor = FindMineGridActor();
@@ -103,23 +90,15 @@ void AMinesweeperPlayerControllerBase::Tick(float DeltaSeconds)
 		if (FullGridMapVersion != GridMapAreaVersion)
 		{
 			// Update GridMapArea values
-			UpdateGridMapAreaValues(FullMineGridMap);
+			UpdateGridMapAreaCellValues(FullMineGridMap);
 
 			// Update map version
 			GridMapAreaVersion = FullGridMapVersion;
 		}
 		else
 		{
-			// Add&Remove cells of GridMapArea as necessary
+			// Add&remove marginal cells of GridMapArea as necessary
 			AddRemoveGridMapAreaCells(FullMineGridMap);
-		}
-	}
-
-	if (AMinesweeperGameStateBase* MinesweeperState = GetWorld()->GetGameState<AMinesweeperGameStateBase>())
-	{
-		if (MinesweeperState->HasExplodedCell())
-		{
-			MineGridActor->SetGridCellExploded(MinesweeperState->GetExplodedCoords());
 		}
 	}
 }
@@ -140,7 +119,7 @@ void AMinesweeperPlayerControllerBase::AddRemoveGridMapAreaCells(const FMineGrid
 			const FIntPoint PawnRelativeGridCoords = GetPawnRelativeLocationOfGrid(PlayerPawn, MineGridActor);
 
 			// Check if need update by determining if pawn (player) is at the same coords as before or 
-			// it is forced to update, then proceed with map area update if new pawn coords is different
+			// it is forced to update, then proceed with adding & removing marginal cells if new pawn coords is different
 			if (PawnRelativeGridCoords != PrevPlayerRelativeGridCoords || bForcedAddRemove)
 			{
 				// Define reference to grid map dimensions
@@ -151,14 +130,11 @@ void AMinesweeperPlayerControllerBase::AddRemoveGridMapAreaCells(const FMineGrid
 				const FIntPoint MaxStartCoords = PawnRelativeGridCoords - MapAreaMaxHalfSize;
 				const FIntPoint MaxEndCoords = PawnRelativeGridCoords + MapAreaMaxHalfSize + FIntPoint(1, 1);
 
-				// Allocate max size
+				// Allocate max size of authoritive mines area
 				const FIntPoint MapAreaMaxSize = MaxEndCoords - MaxStartCoords + FIntPoint(1, 1);
 				MineGridMapArea.Cells.Reserve(MapAreaMaxSize.X * MapAreaMaxSize.Y);
 
 				// Determine valid starting & endings coords of map "visible" area
-				//const FIntPoint NewStartCoords = FIntPoint(FMath::Clamp(MaxStartCoords.X, 0, MapGridDimensions.X), FMath::Clamp(MaxStartCoords.Y, 0, MapGridDimensions.Y));
-				//const FIntPoint NewEndCoords = FIntPoint(FMath::Clamp(MaxEndCoords.X, -1, MapGridDimensions.X - 1), FMath::Clamp(MaxEndCoords.Y, -1, MapGridDimensions.Y - 1));
-
 				FIntPoint NewStartCoords;
 				NewStartCoords.X = MaxStartCoords.X >= 0 ? MaxStartCoords.X : FMath::Min(0, MaxEndCoords.X + 1);
 				NewStartCoords.Y = MaxStartCoords.Y >= 0 ? MaxStartCoords.Y : FMath::Min(0, MaxEndCoords.Y + 1);
@@ -308,7 +284,7 @@ void AMinesweeperPlayerControllerBase::AddRemoveGridMapAreaCells(const FMineGrid
 				// Finally apply changes
 				ApplyAddedRemovedGridCells(GridMapChanges);
 
-				// Update prev player coords
+				// Remember player coords used to process
 				PrevPlayerRelativeGridCoords = PawnRelativeGridCoords;
 			}
 		}
@@ -317,8 +293,8 @@ void AMinesweeperPlayerControllerBase::AddRemoveGridMapAreaCells(const FMineGrid
 
 void AMinesweeperPlayerControllerBase::ClearAllGridCells()
 {
-  FMineGridMapChanges GridMapChanges;
-  GridMapChanges.NewGridDimensions = FIntPoint::ZeroValue;
+	FMineGridMapChanges GridMapChanges;
+	GridMapChanges.NewGridDimensions = FIntPoint::ZeroValue;
 
 	for (auto CellToRemove : MineGridMapArea.Cells)
 	{
@@ -330,7 +306,7 @@ void AMinesweeperPlayerControllerBase::ClearAllGridCells()
 	ApplyAddedRemovedGridCells(GridMapChanges);
 }
 
-void AMinesweeperPlayerControllerBase::UpdateGridMapAreaValues(const FMineGridMap& MineGridMap)
+void AMinesweeperPlayerControllerBase::UpdateGridMapAreaCellValues(const FMineGridMap& MineGridMap)
 {
 	FMineGridMapCellUpdates CellsUpdate;
 
@@ -341,8 +317,6 @@ void AMinesweeperPlayerControllerBase::UpdateGridMapAreaValues(const FMineGridMa
 
 		if (CoordsCellEntry.Value != NewCellValue)
 		{
-			CoordsCellEntry.Value = NewCellValue;
-
 			CellsUpdate.UpdatedGridMapCellCoords.Emplace(Coords);
 			CellsUpdate.UpdatedGridMapCellValues.Emplace(NewCellValue);
 		}
@@ -354,72 +328,6 @@ void AMinesweeperPlayerControllerBase::UpdateGridMapAreaValues(const FMineGridMa
 void AMinesweeperPlayerControllerBase::HandleOnTriggeredCoords(const FIntPoint& EnteredCoords)
 {
 	OnPlayerTriggeredCoords.Broadcast(EnteredCoords);
-}
-
-void AMinesweeperPlayerControllerBase::ShowNewGameMenu()
-{
-	if (NewGameWidget)
-	{
-		NewGameWidget->SetVisibility(ESlateVisibility::Visible);
-		SetInputMode(FInputModeGameAndUI());
-		SetShowMouseCursor(true);
-		bNewGameMenuVisible = true;
-	}
-}
-
-void AMinesweeperPlayerControllerBase::HideNewGameMenu()
-{
-	if (NewGameWidget)
-	{
-		NewGameWidget->SetVisibility(ESlateVisibility::Hidden);
-		SetInputMode(FInputModeGameOnly());
-		SetShowMouseCursor(false);
-		bNewGameMenuVisible = false;
-	}
-}
-
-void AMinesweeperPlayerControllerBase::ShowGameOver()
-{
-	if (GameOverWidget)
-	{
-		GameOverWidget->SetVisibility(ESlateVisibility::Visible);
-		SetInputMode(FInputModeGameAndUI());
-		SetShowMouseCursor(true);
-		bGameOverVisible = true;
-	}
-}
-
-void AMinesweeperPlayerControllerBase::HideGameOver()
-{
-	if (GameOverWidget)
-	{
-		GameOverWidget->SetVisibility(ESlateVisibility::Hidden);
-		SetInputMode(FInputModeGameOnly());
-		SetShowMouseCursor(false);
-		bGameOverVisible = false;
-	}
-}
-
-void AMinesweeperPlayerControllerBase::ShowGameWin()
-{
-	if (GameWinWidget)
-	{
-		GameWinWidget->SetVisibility(ESlateVisibility::Visible);
-		SetInputMode(FInputModeGameAndUI());
-		SetShowMouseCursor(true);
-		bGameWinVisible = true;
-	}
-}
-
-void AMinesweeperPlayerControllerBase::HideGameWin()
-{
-	if (GameWinWidget)
-	{
-		GameWinWidget->SetVisibility(ESlateVisibility::Hidden);
-		SetInputMode(FInputModeGameOnly());
-		SetShowMouseCursor(false);
-		bGameWinVisible = false;
-	}
 }
 
 void AMinesweeperPlayerControllerBase::SelectNewGame_Implementation(const uint8 MapSize)
@@ -449,6 +357,13 @@ void AMinesweeperPlayerControllerBase::ApplyAddedRemovedGridCells_Implementation
 
 void AMinesweeperPlayerControllerBase::ApplyUpdatedGridCellValues_Implementation(const FMineGridMapCellUpdates& UpdatedCells)
 {
+	auto UpdatedCoordsIt = UpdatedCells.UpdatedGridMapCellCoords.CreateConstIterator();
+	auto UpdatedValuesIt = UpdatedCells.UpdatedGridMapCellValues.CreateConstIterator();
+	for (UpdatedCoordsIt, UpdatedValuesIt; UpdatedCoordsIt && UpdatedValuesIt; ++UpdatedCoordsIt, ++UpdatedValuesIt)
+	{
+		MineGridMapArea.Cells[*UpdatedCoordsIt] = *UpdatedValuesIt;
+	}
+
 	if (MineGridActor)
 	{
 		MineGridActor->UpdateCellValues(UpdatedCells);

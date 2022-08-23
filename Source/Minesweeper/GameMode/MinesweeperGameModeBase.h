@@ -40,7 +40,7 @@ protected:
 	FMineGridMap MineGridMap;
 
 	/**
-	 * Stores latest version number of grid map. Used for update determination.
+	 * Stores latest version number of grid map. Used for map update determination.
 	 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Minesweeper")
 	int32 MineGridMapVersion;
@@ -48,6 +48,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Minesweeper")
 	class AMinesweeperPlayerControllerBase* LobbyLeader;
 
+	/**
+	 * Represents all remaining mine-free cells to be discovered 
+	 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Minesweeper")
 	int32 RemainingClearCellCount;
 

@@ -42,7 +42,7 @@ public:
 	void ClearAllGridCells();
 
 	UFUNCTION()
-	void UpdateGridMapAreaValues(const FMineGridMap& MineGridMap);
+	void UpdateGridMapAreaCellValues(const FMineGridMap& MineGridMap);
 
 	UFUNCTION(Client, Reliable)
 	void NotifyGameStarted();

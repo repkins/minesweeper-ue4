@@ -61,7 +61,7 @@ void AMineGridCellBase::UpdateCellValue(const EMineGridMapCell& NewCellValue)
 			CellMesh->SetMaterial(0, ClearMaterial);
 		}
 
-		// Disable generation of overlap events
+		// No need to generate overlap events anymore so disable them to save resources
 		TriggerBox->SetGenerateOverlapEvents(false);
 	} 
 	else if (NewCellValue == EMineGridMapCell::MGMC_Revealed)
@@ -74,6 +74,18 @@ void AMineGridCellBase::UpdateCellValue(const EMineGridMapCell& NewCellValue)
 		{
 			// Set appropriate material
 			CellMesh->SetMaterial(0, UntriggeredMaterial);
+		}
+	}
+	else if (NewCellValue == EMineGridMapCell::MGMC_Exploded)
+	{
+		// Set cell value
+		FString AsteriskStr = TEXT("*");
+		ValueText->SetText(FText::FromString(AsteriskStr));
+
+		if (ExplodedMaterial)
+		{
+			// Set appropriate material
+			CellMesh->SetMaterial(0, ExplodedMaterial);
 		}
 	}
 	else if (NewCellValue == EMineGridMapCell::MGMC_Undiscovered)
@@ -90,15 +102,6 @@ void AMineGridCellBase::UpdateCellValue(const EMineGridMapCell& NewCellValue)
 
 		// Enable generation of overlap events
 		TriggerBox->SetGenerateOverlapEvents(true);
-	}
-}
-
-void AMineGridCellBase::SetCellExploded_Implementation()
-{
-	if (ExplodedMaterial)
-	{
-		// Set appropriate material
-		CellMesh->SetMaterial(0, ExplodedMaterial);
 	}
 }
 

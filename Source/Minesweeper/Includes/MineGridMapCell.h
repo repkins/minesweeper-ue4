@@ -17,6 +17,7 @@ enum class EMineGridMapCell : uint8
 	// The following remaining emums represents special cell values
 	MGMC_Undiscovered, // Is not yet "stepped on"
 	MGMC_Revealed, // Mine is revealed
+	MGMC_Exploded, // Mine is exploded
 
 	MGMC_MAX
 };

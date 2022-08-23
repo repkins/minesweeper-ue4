@@ -90,36 +90,15 @@ void AMinesweeperPlayerControllerBase::Tick(float DeltaSeconds)
 		if (FullGridMapVersion != GridMapAreaVersion)
 		{
 			// Update GridMapArea values
-			UpdateGridMapAreaValues(FullMineGridMap);
+			UpdateGridMapAreaCellValues(FullMineGridMap);
 
 			// Update map version
 			GridMapAreaVersion = FullGridMapVersion;
 		}
 		else
 		{
-			// Add&Remove cells of GridMapArea as necessary
+			// Add&remove marginal cells of GridMapArea as necessary
 			AddRemoveGridMapAreaCells(FullMineGridMap);
-		}
-	}
-
-	if (AMinesweeperGameStateBase* MinesweeperState = GetWorld()->GetGameState<AMinesweeperGameStateBase>())
-	{
-		if (MinesweeperState->HasExplodedCell())
-		{
-			MineGridActor->SetGridCellExploded(MinesweeperState->GetExplodedCoords());
-		}
-		else
-		{
-			auto LastExplodedCoords = MinesweeperState->GetExplodedCoords();
-
-			if (MineGridMapArea.Cells.Contains(LastExplodedCoords))
-			{
-				FMineGridMapCellUpdates CellUpdate;
-				CellUpdate.UpdatedGridMapCellCoords.Emplace(LastExplodedCoords);
-				CellUpdate.UpdatedGridMapCellValues.Emplace(MineGridMapArea.Cells[LastExplodedCoords]);
-
-				MineGridActor->UpdateCellValues(CellUpdate);
-			}
 		}
 	}
 }
@@ -140,7 +119,7 @@ void AMinesweeperPlayerControllerBase::AddRemoveGridMapAreaCells(const FMineGrid
 			const FIntPoint PawnRelativeGridCoords = GetPawnRelativeLocationOfGrid(PlayerPawn, MineGridActor);
 
 			// Check if need update by determining if pawn (player) is at the same coords as before or 
-			// it is forced to update, then proceed with map area update if new pawn coords is different
+			// it is forced to update, then proceed with adding & removing marginal cells if new pawn coords is different
 			if (PawnRelativeGridCoords != PrevPlayerRelativeGridCoords || bForcedAddRemove)
 			{
 				// Define reference to grid map dimensions
@@ -305,7 +284,7 @@ void AMinesweeperPlayerControllerBase::AddRemoveGridMapAreaCells(const FMineGrid
 				// Finally apply changes
 				ApplyAddedRemovedGridCells(GridMapChanges);
 
-				// Update prev player coords
+				// Remember player coords used to process
 				PrevPlayerRelativeGridCoords = PawnRelativeGridCoords;
 			}
 		}
@@ -327,7 +306,7 @@ void AMinesweeperPlayerControllerBase::ClearAllGridCells()
 	ApplyAddedRemovedGridCells(GridMapChanges);
 }
 
-void AMinesweeperPlayerControllerBase::UpdateGridMapAreaValues(const FMineGridMap& MineGridMap)
+void AMinesweeperPlayerControllerBase::UpdateGridMapAreaCellValues(const FMineGridMap& MineGridMap)
 {
 	FMineGridMapCellUpdates CellsUpdate;
 

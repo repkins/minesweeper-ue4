@@ -16,11 +16,19 @@ public:
 	AMinesweeperGameStateBase();
 
 	UFUNCTION(BlueprintCallable)
+	int32 GetNumUndiscoveredClearCells();
+
+	void SetNumUndiscoveredClearCells(const int32 NewNumUndiscoveredClearCells);
+
+	UFUNCTION(BlueprintCallable)
 	FString GetLevelPassword();
 
 	void SetLevelPassword(const FString& NewLevelPassword);
 
 protected:
+
+	UPROPERTY(Replicated)
+	int32 NumUndiscoveredClearCells;
 
 	UPROPERTY(Replicated)
 	FString LevelPassword;

@@ -7,7 +7,18 @@
 
 AMinesweeperGameStateBase::AMinesweeperGameStateBase(): Super()
 {
+	NumUndiscoveredClearCells = 0;
+	LevelPassword = TEXT("");
+}
 
+int32 AMinesweeperGameStateBase::GetNumUndiscoveredClearCells()
+{
+	return NumUndiscoveredClearCells;
+}
+
+void AMinesweeperGameStateBase::SetNumUndiscoveredClearCells(const int32 NewNumUndiscoveredClearCells)
+{
+	NumUndiscoveredClearCells = NewNumUndiscoveredClearCells;
 }
 
 FString AMinesweeperGameStateBase::GetLevelPassword()
@@ -23,5 +34,6 @@ void AMinesweeperGameStateBase::GetLifetimeReplicatedProps(TArray<FLifetimePrope
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
+	DOREPLIFETIME(AMinesweeperGameStateBase, NumUndiscoveredClearCells);
 	DOREPLIFETIME(AMinesweeperGameStateBase, LevelPassword);
 }

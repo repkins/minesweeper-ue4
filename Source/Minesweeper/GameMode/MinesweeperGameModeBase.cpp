@@ -150,6 +150,11 @@ void AMinesweeperGameModeBase::OpenCell(const FIntPoint& EnteredCoords)
 	}
 
 	MineGridMapVersion += 1;
+
+	if (AMinesweeperGameStateBase* MinesweeperGameState = GetGameState<AMinesweeperGameStateBase>())
+	{
+		MinesweeperGameState->SetNumUndiscoveredClearCells(RemainingClearCellCount);
+	}
 }
 
 void AMinesweeperGameModeBase::HandleOnPlayerNewGame(const uint8 MapSize)
@@ -200,4 +205,9 @@ void AMinesweeperGameModeBase::GenerateNewMap(const uint8 MapSize)
 	}
 
 	RemainingClearCellCount = MineGridMap.Cells.Num() - ActualMinesHidden.Num();
+
+	if (AMinesweeperGameStateBase* MinesweeperGameState = GetGameState<AMinesweeperGameStateBase>())
+	{
+		MinesweeperGameState->SetNumUndiscoveredClearCells(RemainingClearCellCount);
+	}
 }

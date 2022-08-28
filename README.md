@@ -22,7 +22,7 @@ Developed with Unreal Engine 4
 8. All clients continue opening cells until one of the following:
     - mines in untriggered cells became revealed and showing "You Win" HUD overlay for all clients;
     - or until last triggered cell become reddish color and revealed and showing "Game Over" HUD overlay for all clients
-9. In either of two game ends all clients depending of lobby role within session have the following options by clicking on the following buttons:
+9. In either of two game ends all clients depending of lobby role within session have the following options by clicking on:
     - lobby leader: start a new game (opens "main" menu)
     - all clients: quit
 

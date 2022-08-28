@@ -55,7 +55,7 @@ public:
 
 protected:
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Minesweeper")
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Minesweeper")
 	bool bIsLobbyLeader;
 
 	/**
@@ -112,4 +112,6 @@ protected:
 
 	AMineGridBase* FindMineGridActor();
 	FIntPoint GetPawnRelativeLocationOfGrid(APawn* PlayerPawn, AMineGridBase* MineGrid);
+
+	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const;
 };

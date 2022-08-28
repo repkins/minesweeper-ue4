@@ -43,16 +43,19 @@ void AMineGridCellBase::UpdateCellValue(const EMineGridMapCell& NewCellValue)
 {
 	if (NewCellValue <= EMineGridMapCell::MGMC_Eight)
 	{
-		if (NewCellValue > EMineGridMapCell::MGMC_Zero)
+		if (ValueText)
 		{
-			// Set cell value if not zero
-			FString NumOfMinesStr = FString::Printf(TEXT("%i"), (uint8)NewCellValue);
-			ValueText->SetText(FText::FromString(NumOfMinesStr));
-		}
-		else
-		{
-			// Set empty string if zero
-			ValueText->SetText(FText::FromString(""));
+			if (NewCellValue > EMineGridMapCell::MGMC_Zero)
+			{
+				// Set cell value if not zero
+				FString NumOfMinesStr = FString::Printf(TEXT("%i"), (uint8)NewCellValue);
+				ValueText->SetText(FText::FromString(NumOfMinesStr));
+			}
+			else
+			{
+				// Set empty string if zero
+				ValueText->SetText(FText::FromString(""));
+			}
 		}
 
 		if (ClearMaterial)
@@ -66,9 +69,12 @@ void AMineGridCellBase::UpdateCellValue(const EMineGridMapCell& NewCellValue)
 	} 
 	else if (NewCellValue == EMineGridMapCell::MGMC_Revealed)
 	{
-		// Set cell value
-		FString AsteriskStr = TEXT("*");
-		ValueText->SetText(FText::FromString(AsteriskStr));
+		if (ValueText)
+		{
+			// Set cell value
+			FString AsteriskStr = TEXT("*");
+			ValueText->SetText(FText::FromString(AsteriskStr));
+		}
 
 		if (UntriggeredMaterial)
 		{
@@ -78,9 +84,12 @@ void AMineGridCellBase::UpdateCellValue(const EMineGridMapCell& NewCellValue)
 	}
 	else if (NewCellValue == EMineGridMapCell::MGMC_Exploded)
 	{
-		// Set cell value
-		FString AsteriskStr = TEXT("*");
-		ValueText->SetText(FText::FromString(AsteriskStr));
+		if (ValueText)
+		{
+			// Set cell value
+			FString AsteriskStr = TEXT("*");
+			ValueText->SetText(FText::FromString(AsteriskStr));
+		}
 
 		if (ExplodedMaterial)
 		{
@@ -90,9 +99,12 @@ void AMineGridCellBase::UpdateCellValue(const EMineGridMapCell& NewCellValue)
 	}
 	else if (NewCellValue == EMineGridMapCell::MGMC_Undiscovered)
 	{
-		// Set cell value
-		FString EmptyStr = TEXT("");
-		ValueText->SetText(FText::FromString(EmptyStr));
+		if (ValueText)
+		{
+			// Set cell value
+			FString EmptyStr = TEXT("");
+			ValueText->SetText(FText::FromString(EmptyStr));
+		}
 
 		if (UntriggeredMaterial)
 		{

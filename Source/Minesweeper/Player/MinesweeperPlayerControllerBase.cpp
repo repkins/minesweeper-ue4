@@ -3,6 +3,7 @@
 
 #include "MinesweeperPlayerControllerBase.h"
 #include "EngineUtils.h"
+#include "Net/UnrealNetwork.h"
 #include "Minesweeper/GameMode/MinesweeperGameModeBase.h"
 #include "Minesweeper/GameMode/MinesweeperGameStateBase.h"
 #include "Minesweeper/HUD/MinesweeperHUDBase.h"
@@ -322,7 +323,10 @@ void AMinesweeperPlayerControllerBase::UpdateGridMapAreaCellValues(const FMineGr
 		}
 	}
 
-	ApplyUpdatedGridCellValues(CellsUpdate);
+	if (CellsUpdate.UpdatedGridMapCellCoords.Num() > 0)
+	{
+		ApplyUpdatedGridCellValues(CellsUpdate);
+	}
 }
 
 void AMinesweeperPlayerControllerBase::HandleOnTriggeredCoords(const FIntPoint& EnteredCoords)
@@ -337,6 +341,10 @@ void AMinesweeperPlayerControllerBase::SelectNewGame_Implementation(const uint8 
 
 void AMinesweeperPlayerControllerBase::ApplyAddedRemovedGridCells_Implementation(const FMineGridMapChanges& GridMapChanges)
 {
+	// 
+	// 1. Update area of map according to new changes
+	// 
+
 	for (const FIntPoint& RemovedCellCoords : GridMapChanges.RemovedGridMapCells)
 	{
 		MineGridMapArea.Cells.Remove(RemovedCellCoords);
@@ -349,6 +357,9 @@ void AMinesweeperPlayerControllerBase::ApplyAddedRemovedGridCells_Implementation
 		MineGridMapArea.Cells.Emplace(*AddedCoordsIt, *AddedValuesIt);
 	}
 
+	// 
+	// 2. Update visible representation of area
+	//
 	if (MineGridActor)
 	{
 		MineGridActor->AddOrRemoveGridCells(GridMapChanges);
@@ -399,4 +410,11 @@ FIntPoint AMinesweeperPlayerControllerBase::GetPawnRelativeLocationOfGrid(APawn*
 	FIntPoint PawnRelativeGridCoords = FIntPoint(PawnRelativeLocationX, PawnRelativeLocationY) / CellSize;
 
 	return PawnRelativeGridCoords;
+}
+
+void AMinesweeperPlayerControllerBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(AMinesweeperPlayerControllerBase, bIsLobbyLeader);
 }

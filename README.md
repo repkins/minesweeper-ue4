@@ -22,7 +22,7 @@ Developed with Unreal Engine 4
 8. All clients continue opening cells until one of the following:
     - mines in untriggered cells became revealed and showing "You Win" HUD overlay for all clients;
     - or until last triggered cell become reddish color and revealed and showing "Game Over" HUD overlay for all clients
-9. In either of two game ends all clients depending of lobby role within session have the following options by clicking on related buttons:
+9. In either of two game ends all clients depending of lobby role within session have the following options by clicking on the following buttons:
     - lobby leader: start a new game (opens "main" menu)
     - all clients: quit
 
@@ -40,4 +40,4 @@ Grid, Grid Cells, GameMode and PlayerController core logic are implemented nativ
 - change property values or references to assets;
 - invoking native methods;
 - listening to Blueprint events, overriding native implemention of them.
-- 
+

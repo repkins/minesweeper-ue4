@@ -1,4 +1,4 @@
-# Minesweeper
+# Minesweeper (Multiplayer-enabled)
 
 Developed with Unreal Engine 4
 

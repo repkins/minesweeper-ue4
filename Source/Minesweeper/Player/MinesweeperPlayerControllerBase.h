@@ -12,8 +12,6 @@
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPlayerNewGameDelegate, const uint8, MapSize);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPlayerTriggeredCoordsDelegate, const FIntPoint&, EnteredIntoCoords);
 
-typedef TTuple<FIntPoint, FIntPoint> TCoordsBoundsTuple;
-
 /**
  * This actor controls pawn movement, "visible" area of mine grid map and HUD widgets visibility.
  */

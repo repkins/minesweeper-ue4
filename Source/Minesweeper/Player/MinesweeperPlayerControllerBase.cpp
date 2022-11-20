@@ -128,101 +128,104 @@ void AMinesweeperPlayerControllerBase::AddRemoveGridMapAreaCells(const FMineGrid
 
 				// Determine starting & endings coords of map area
 				const FIntPoint MapAreaMaxHalfSize = FIntPoint(MapAreaMaxHalfSizeX, MapAreaMaxHalfSizeY);
-				const FIntPoint MaxStartCoords = PawnRelativeGridCoords - MapAreaMaxHalfSize;
-				const FIntPoint MaxEndCoords = PawnRelativeGridCoords + MapAreaMaxHalfSize;
+				const FIntRect MaxBounds(
+					PawnRelativeGridCoords - MapAreaMaxHalfSize, 
+					PawnRelativeGridCoords + MapAreaMaxHalfSize
+				);
 
 				// Allocate max size of authoritive mines area
-				const FIntPoint MapAreaMaxSize = MaxEndCoords - MaxStartCoords + FIntPoint(1, 1);
+				const FIntPoint MapAreaMaxSize = MaxBounds.Size() + FIntPoint(1, 1);
 				MineGridMapArea.Cells.Reserve(MapAreaMaxSize.X * MapAreaMaxSize.Y);
 
 				// Determine valid starting & endings coords of map "visible" area
-				FIntPoint NewStartCoords;
-				NewStartCoords.X = MaxStartCoords.X >= 0 ? MaxStartCoords.X : FMath::Min(0, MaxEndCoords.X + 1);
-				NewStartCoords.Y = MaxStartCoords.Y >= 0 ? MaxStartCoords.Y : FMath::Min(0, MaxEndCoords.Y + 1);
+				const FIntRect NewBounds(
+					FIntPoint(
+						MaxBounds.Min.X >= 0 ? MaxBounds.Min.X : FMath::Min(0, MaxBounds.Max.X + 1),
+						MaxBounds.Min.Y >= 0 ? MaxBounds.Min.Y : FMath::Min(0, MaxBounds.Max.Y + 1)
+					),
+					FIntPoint(
+						MaxBounds.Max.X <= MapGridDimensions.X - 1 ? MaxBounds.Max.X : FMath::Max(MapGridDimensions.X - 1, MaxBounds.Min.X - 1),
+						MaxBounds.Max.Y <= MapGridDimensions.Y - 1 ? MaxBounds.Max.Y : FMath::Max(MapGridDimensions.Y - 1, MaxBounds.Min.Y - 1)
+					)
+				);
 
-				FIntPoint NewEndCoords;
-				NewEndCoords.X = MaxEndCoords.X <= MapGridDimensions.X - 1 ? MaxEndCoords.X : FMath::Max(MapGridDimensions.X - 1, MaxStartCoords.X - 1);
-				NewEndCoords.Y = MaxEndCoords.Y <= MapGridDimensions.Y - 1 ? MaxEndCoords.Y : FMath::Max(MapGridDimensions.Y - 1, MaxStartCoords.Y - 1);
+				const FIntRect OldCoords(MineGridMapArea.StartCoords, MineGridMapArea.EndCoords);
 
 				// Because start and end coords are inclusive, we need to increment by 1
-				const FIntPoint MapAreaSize = NewEndCoords - NewStartCoords + FIntPoint(1, 1);
+				const FIntPoint MapAreaSize = NewBounds.Size() + FIntPoint(1, 1);
 
-				const FIntPoint OldStartCoords = MineGridMapArea.StartCoords;
-				const FIntPoint OldEndCoords = MineGridMapArea.EndCoords;
+				FIntRect SideBounds;
 
-				TArray<TCoordsBoundsTuple> AdditiveBounds;
-				TArray<TCoordsBoundsTuple> SubtractiveBounds;
-				AdditiveBounds.Reserve(4);
-				SubtractiveBounds.Reserve(4);
+				TArray<FIntRect> AdditiveSides;
+				TArray<FIntRect> SubtractiveSides;
+				AdditiveSides.Reserve(4);
+				SubtractiveSides.Reserve(4);
 
-				// Top-left difference
-				const FIntPoint LeftTopDiff = OldStartCoords - NewStartCoords;
-
+				// Calculate difference represented as rect
+				const FIntRect Diff = OldCoords - NewBounds;
+					
 				// Left side
-				if (LeftTopDiff.X > 0)
+				if (Diff.Min.X > 0)
 				{
 					// Additive
-					const FIntPoint LeftStartCoords(NewStartCoords.X, NewStartCoords.Y);
-					const FIntPoint LeftEndCoords(NewStartCoords.X + LeftTopDiff.X - 1, NewEndCoords.Y);
-					AdditiveBounds.Emplace(LeftStartCoords, LeftEndCoords);
+					SideBounds.Min = FIntPoint(NewBounds.Min);
+					SideBounds.Max = FIntPoint(NewBounds.Min.X + Diff.Min.X - 1, NewBounds.Max.Y);
+					AdditiveSides.Emplace(SideBounds);
 				}
-				else if (LeftTopDiff.X < 0)
+				else if (Diff.Min.X < 0)
 				{
 					// Subtractive
-					const FIntPoint LeftStartCoords(OldStartCoords.X, OldStartCoords.Y);
-					const FIntPoint LeftEndCoords(OldStartCoords.X - LeftTopDiff.X - 1, OldEndCoords.Y);
-					SubtractiveBounds.Emplace(LeftStartCoords, LeftEndCoords);
+					SideBounds.Min = FIntPoint(OldCoords.Min);
+					SideBounds.Max = FIntPoint(OldCoords.Min.X - Diff.Min.X - 1, OldCoords.Max.Y);
+					SubtractiveSides.Emplace(SideBounds);
 				}
 
 				// Top side
-				if (LeftTopDiff.Y > 0)
+				if (Diff.Min.Y > 0)
 				{
 					// Additive
-					const FIntPoint TopStartCoords(NewStartCoords.X, NewStartCoords.Y);
-					const FIntPoint TopEndCoords(NewEndCoords.X, NewStartCoords.Y + LeftTopDiff.Y - 1);
-					AdditiveBounds.Emplace(TopStartCoords, TopEndCoords);
+					SideBounds.Min = FIntPoint(NewBounds.Min);
+					SideBounds.Max = FIntPoint(NewBounds.Max.X, NewBounds.Min.Y + Diff.Min.Y - 1);
+					AdditiveSides.Emplace(SideBounds);
 				}
-				else if (LeftTopDiff.Y < 0)
+				else if (Diff.Min.Y < 0)
 				{
 					// Subtractive
-					const FIntPoint TopStartCoords(OldStartCoords.X, OldStartCoords.Y);
-					const FIntPoint TopEndCoords(OldEndCoords.X, OldStartCoords.Y - LeftTopDiff.Y - 1);
-					SubtractiveBounds.Emplace(TopStartCoords, TopEndCoords);
+					SideBounds.Min = FIntPoint(OldCoords.Min);
+					SideBounds.Max = FIntPoint(OldCoords.Max.X, OldCoords.Min.Y - Diff.Min.Y - 1);
+					SubtractiveSides.Emplace(SideBounds);
 				}
-
-				// Bottom-right difference
-				const FIntPoint RightBottomDiff = NewEndCoords - OldEndCoords;
 
 				// Right side
-				if (RightBottomDiff.X > 0)
+				if (Diff.Max.X < 0)
 				{
 					// Additive
-					const FIntPoint RightStartCoords(NewEndCoords.X - RightBottomDiff.X + 1, NewStartCoords.Y);
-					const FIntPoint RightEndCoords(NewEndCoords.X, NewEndCoords.Y);
-					AdditiveBounds.Emplace(RightStartCoords, RightEndCoords);
+					SideBounds.Min = FIntPoint(NewBounds.Max.X + Diff.Max.X + 1, NewBounds.Min.Y);
+					SideBounds.Max = FIntPoint(NewBounds.Max);
+					AdditiveSides.Emplace(SideBounds);
 				}
-				else if (RightBottomDiff.X < 0)
+				else if (Diff.Max.X > 0)
 				{
 					// Subtractive
-					const FIntPoint RightStartCoords(OldEndCoords.X + RightBottomDiff.X + 1, OldStartCoords.Y);
-					const FIntPoint RightEndCoords(OldEndCoords.X, OldEndCoords.Y);
-					SubtractiveBounds.Emplace(RightStartCoords, RightEndCoords);
+					SideBounds.Min = FIntPoint(OldCoords.Max.X - Diff.Max.X + 1, OldCoords.Min.Y);
+					SideBounds.Max = FIntPoint(OldCoords.Max);
+					SubtractiveSides.Emplace(SideBounds);
 				}
 
 				// Bottom side
-				if (RightBottomDiff.Y > 0)
+				if (Diff.Max.Y < 0)
 				{
 					// Additive
-					const FIntPoint BottomStartCoords(NewStartCoords.X, NewEndCoords.Y - RightBottomDiff.Y + 1);
-					const FIntPoint BottomEndCoords(NewEndCoords.X, NewEndCoords.Y);
-					AdditiveBounds.Emplace(BottomStartCoords, BottomEndCoords);
+					SideBounds.Min = FIntPoint(NewBounds.Min.X, NewBounds.Max.Y + Diff.Max.Y + 1);
+					SideBounds.Max = FIntPoint(NewBounds.Max);
+					AdditiveSides.Emplace(SideBounds);
 				}
-				else if (RightBottomDiff.Y < 0)
+				else if (Diff.Max.Y > 0)
 				{
 					// Subtractive
-					const FIntPoint BottomStartCoords(OldStartCoords.X, OldEndCoords.Y + RightBottomDiff.Y + 1);
-					const FIntPoint BottomEndCoords(OldEndCoords.X, OldEndCoords.Y);
-					SubtractiveBounds.Emplace(BottomStartCoords, BottomEndCoords);
+					SideBounds.Min = FIntPoint(OldCoords.Min.X, OldCoords.Max.Y - Diff.Max.Y + 1);
+					SideBounds.Max = FIntPoint(OldCoords.Max);
+					SubtractiveSides.Emplace(SideBounds);
 				}
 
 				// Define removed & added cell containers
@@ -230,19 +233,16 @@ void AMinesweeperPlayerControllerBase::AddRemoveGridMapAreaCells(const FMineGrid
 				GridMapChanges.NewGridDimensions = MapAreaSize;
 
 				// Start with subtractive bounds first
-				for (const TCoordsBoundsTuple& SideBoundsTuple : SubtractiveBounds)
+				for (const auto &SubtractiveBounds : SubtractiveSides)
 				{
-					if (AdditiveBounds.Contains(SideBoundsTuple))
+					if (AdditiveSides.Contains(SubtractiveBounds))
 					{
 						continue;
 					}
 
-					FIntPoint StartCoords = SideBoundsTuple.Get<0>(),
-						EndCoords = SideBoundsTuple.Get<1>();
-
-					for (int32 Y = StartCoords.Y; Y <= EndCoords.Y; ++Y)
+					for (int32 Y = SubtractiveBounds.Min.Y; Y <= SubtractiveBounds.Max.Y; ++Y)
 					{
-						for (int32 X = StartCoords.X; X <= EndCoords.X; ++X)
+						for (int32 X = SubtractiveBounds.Min.X; X <= SubtractiveBounds.Max.X; ++X)
 						{
 							FIntPoint Coords(X, Y);
 
@@ -252,19 +252,16 @@ void AMinesweeperPlayerControllerBase::AddRemoveGridMapAreaCells(const FMineGrid
 				}
 
 				// Then with additive bounds
-				for (const TCoordsBoundsTuple& SideBoundsTuple : AdditiveBounds)
+				for (const auto &AdditiveBounds : AdditiveSides)
 				{
-					if (SubtractiveBounds.Contains(SideBoundsTuple))
+					if (SubtractiveSides.Contains(AdditiveBounds))
 					{
 						continue;
 					}
 
-					FIntPoint StartCoords = SideBoundsTuple.Get<0>(),
-						EndCoords = SideBoundsTuple.Get<1>();
-
-					for (int32 Y = StartCoords.Y; Y <= EndCoords.Y; ++Y)
+					for (int32 Y = AdditiveBounds.Min.Y; Y <= AdditiveBounds.Max.Y; ++Y)
 					{
-						for (int32 X = StartCoords.X; X <= EndCoords.X; ++X)
+						for (int32 X = AdditiveBounds.Min.X; X <= AdditiveBounds.Max.X; ++X)
 						{
 							FIntPoint Coords(X, Y);
 							EMineGridMapCell CellValue = MineGridMap.Cells[Coords];
@@ -279,8 +276,8 @@ void AMinesweeperPlayerControllerBase::AddRemoveGridMapAreaCells(const FMineGrid
 				}
 
 				MineGridMapArea.GridDimensions = MapAreaSize;
-				MineGridMapArea.StartCoords = NewStartCoords;
-				MineGridMapArea.EndCoords = NewEndCoords;
+				MineGridMapArea.StartCoords = NewBounds.Min;
+				MineGridMapArea.EndCoords = NewBounds.Max;
 
 				// Finally apply changes
 				ApplyAddedRemovedGridCells(GridMapChanges);

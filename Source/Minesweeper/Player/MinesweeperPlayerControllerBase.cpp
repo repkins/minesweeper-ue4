@@ -16,8 +16,8 @@ AMinesweeperPlayerControllerBase::AMinesweeperPlayerControllerBase(): Super()
 	bIsLobbyLeader = false;
 	MineGridClass = AMineGridBase::StaticClass();
 
-	MapAreaMaxHalfSizeX = 7;
-	MapAreaMaxHalfSizeY = 4;
+	MapAreaMaxHalfSizeX = 8;
+	MapAreaMaxHalfSizeY = 5;
 
 	PrevPlayerRelativeGridCoords = FIntPoint(-1, -1);
 	GridMapAreaVersion = 0;

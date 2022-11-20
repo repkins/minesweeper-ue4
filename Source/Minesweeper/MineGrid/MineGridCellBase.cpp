@@ -13,9 +13,14 @@ AMineGridCellBase::AMineGridCellBase()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
+	// Setup default root component
+	auto SceneComponent = CreateDefaultSubobject<USceneComponent>(TEXT("SceneComponent"));
+	SceneComponent->SetMobility(EComponentMobility::Static);
+	SetRootComponent(SceneComponent);
+
 	// Setup trigger box component
 	TriggerBox = CreateDefaultSubobject<UBoxComponent>(TEXT("TriggerBox"));
-	SetRootComponent(TriggerBox);
+	TriggerBox->SetupAttachment(GetRootComponent());
 
 	// Set default trigger box collision conditions
 	TriggerBox->SetCollisionEnabled(ECollisionEnabled::QueryOnly);

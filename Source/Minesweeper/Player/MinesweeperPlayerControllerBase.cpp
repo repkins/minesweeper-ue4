@@ -172,7 +172,7 @@ void AMinesweeperPlayerControllerBase::AddRemoveGridMapAreaCells(const FMineGrid
 
 				FVector2D RotatedOldBoundsCenter = OldBoundsCenter;
 				FVector2D RotatedOldBoundsExtents = OldBoundsExtents;
-				FVector2D RotatedOldBoundsExtentsWithDiff = RotatedOldBoundsExtents - NewOldCentersDiff;
+				FVector2D RotatedOldBoundsExtentsWithDiff = RotatedOldBoundsExtents + RotatedNewOldCentersDiff;
 				FIntRect RotatedOldBounds = OldBounds;
 				FMatrix2x2 RotatedOldBoundsContDiffMatrix;
 
@@ -213,21 +213,15 @@ void AMinesweeperPlayerControllerBase::AddRemoveGridMapAreaCells(const FMineGrid
 					RotatedNewBounds.Min = (NewBoundsCenter - RotatedNewBoundsExtents).IntPoint();
 					RotatedNewBounds.Max = (NewBoundsCenter + RotatedNewBoundsExtents).IntPoint() - 1;
 
+					// Mirror one axis of extents before rotation
+					RotatedOldBoundsExtentsWithDiff = RotatedOldBoundsExtents + RotatedNewOldCentersDiff * FVector2D(1, -1);
+
 					// Rotate old bounds "with" new bounds aka in relation to new bounds center
-					RotatedOldBoundsContDiffMatrix = FMatrix2x2(
-						-RotatedOldBoundsExtentsWithDiff.X, -RotatedNewOldCentersDiff.X,
-						RotatedOldBoundsExtentsWithDiff.Y, RotatedNewOldCentersDiff.Y
-					);
+					RotatedOldBoundsExtentsWithDiff = RotationMatrix.TransformPoint(RotatedOldBoundsExtentsWithDiff * FVector2D(1, -1));
+					RotatedNewOldCentersDiff = RotationMatrix.TransformPoint(RotatedNewOldCentersDiff);
 
-					RotatedOldBoundsContDiffMatrix = RotationMatrix.Concatenate(RotatedOldBoundsContDiffMatrix);
-
-					RotatedOldBoundsContDiffMatrix.GetMatrix(
-						RotatedOldBoundsExtentsWithDiff.X, RotatedNewOldCentersDiff.X,
-						RotatedOldBoundsExtentsWithDiff.Y, RotatedNewOldCentersDiff.Y
-					);
-
-					RotatedOldBoundsExtents = RotatedOldBoundsExtentsWithDiff + RotatedNewOldCentersDiff;
-					RotatedOldBoundsCenter = NewBoundsCenter + RotatedNewOldCentersDiff;
+					RotatedOldBoundsExtents = RotatedOldBoundsExtentsWithDiff - RotatedNewOldCentersDiff;
+					RotatedOldBoundsCenter = NewBoundsCenter - RotatedNewOldCentersDiff;
 
 					RotatedOldBounds.Min = (RotatedOldBoundsCenter - RotatedOldBoundsExtents).IntPoint();
 					RotatedOldBounds.Max = (RotatedOldBoundsCenter + RotatedOldBoundsExtents).IntPoint() - 1;

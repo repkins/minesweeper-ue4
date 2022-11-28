@@ -164,142 +164,83 @@ void AMinesweeperPlayerControllerBase::AddRemoveGridMapAreaCells(const FMineGrid
 				FVector2D OldBoundsExtents = FVector2D(OldBounds.Size() + 1) / 2;
 				FVector2D OldBoundsCenter = FVector2D(OldBounds.Min) + OldBoundsExtents;
 
-				FVector2D NewOldCentersDiff = NewBoundsCenter - OldBoundsCenter;
-				FVector2D RotatedNewOldCentersDiff = NewOldCentersDiff;
-
 				FVector2D RotatedNewBoundsExtents = NewBoundsExtents;
 				FIntRect RotatedNewBounds = NewBounds;
 
 				FVector2D RotatedOldBoundsCenter = OldBoundsCenter;
 				FVector2D RotatedOldBoundsExtents = OldBoundsExtents;
-				FVector2D RotatedOldBoundsExtentsWithDiff = RotatedOldBoundsExtents + RotatedNewOldCentersDiff;
 				FIntRect RotatedOldBounds = OldBounds;
-				FMatrix2x2 RotatedOldBoundsContDiffMatrix;
 
 				// Here is our rotation matrix to do 90 degrees turn
 				FMatrix2x2 RotationMatrix(
 					0, 1,
 					-1, 0
 				);
+				FMatrix2x2 AccumulatedRotationMatrix = FMatrix2x2();
 
-				TArray<FIntRect> TempAdditiveSides;
-				TArray<FIntRect> TempSubtractiveSides;
-				TempAdditiveSides.Reserve(4);
-				TempSubtractiveSides.Reserve(4);
+				TArray<FIntRect> AdditiveSides;
+				TArray<FIntRect> SubtractiveSides;
+				AdditiveSides.Reserve(4);
+				SubtractiveSides.Reserve(4);
 
 				do {
 					// Calculate difference represented as rect
 					const FIntRect Diff = RotatedOldBounds - RotatedNewBounds;
 
 					// Left side
-					if (Diff.Min.X > 0)
+					if (Diff.Min.X != 0)
 					{
-						// Additive
-						SideBounds.Min = FIntPoint(RotatedNewBounds.Min);
-						SideBounds.Max = FIntPoint(RotatedNewBounds.Min.X + Diff.Min.X - 1, RotatedNewBounds.Max.Y);
-						TempAdditiveSides.Emplace(SideBounds);
-					}
-					else if (Diff.Min.X < 0)
-					{
-						// Subtractive
-						SideBounds.Min = FIntPoint(RotatedOldBounds.Min);
-						SideBounds.Max = FIntPoint(RotatedOldBounds.Min.X - Diff.Min.X - 1, RotatedOldBounds.Max.Y);
-						TempSubtractiveSides.Emplace(SideBounds);
+						bool bIsAdditive = Diff.Min.X > 0,
+								 bIsSubstractive = Diff.Min.X < 0;
+
+						if (bIsAdditive)
+						{
+							SideBounds.Min = FIntPoint(RotatedNewBounds.Min);
+							SideBounds.Max = FIntPoint(RotatedNewBounds.Min.X + Diff.Min.X - 1, RotatedNewBounds.Max.Y);
+						}
+						else if (bIsSubstractive)
+						{
+							SideBounds.Min = FIntPoint(RotatedOldBounds.Min);
+							SideBounds.Max = FIntPoint(RotatedOldBounds.Min.X - Diff.Min.X - 1, RotatedOldBounds.Max.Y);
+						}
+
+						// Rotate newly calculated side bounds to match to default orientation
+						FVector2D SideBoundsExtents = FVector2D(SideBounds.Size() + 1) / 2;
+						FVector2D SideBoundsCenter = FVector2D(SideBounds.Min) + SideBoundsExtents;
+
+						SideBoundsCenter = AccumulatedRotationMatrix.TransformPoint(SideBoundsCenter - NewBoundsCenter) + NewBoundsCenter;
+						SideBoundsExtents = AccumulatedRotationMatrix.TransformPoint(SideBoundsExtents).GetAbs();
+
+						SideBounds.Min = (SideBoundsCenter - SideBoundsExtents).IntPoint();
+						SideBounds.Max = (SideBoundsCenter + SideBoundsExtents).IntPoint() - 1;
+
+						// Add ready side bounds to collection
+						if (bIsAdditive)
+						{
+							AdditiveSides.Emplace(SideBounds);
+						}
+						else if (bIsSubstractive) 
+						{
+							SubtractiveSides.Emplace(SideBounds);
+						}
 					}
 
 					// Rotate new bounds
-					RotatedNewBoundsExtents = RotationMatrix.TransformPoint(RotatedNewBoundsExtents * FVector2D(1, -1));
+					RotatedNewBoundsExtents = RotationMatrix.TransformPoint(RotatedNewBoundsExtents).GetAbs();
 
 					RotatedNewBounds.Min = (NewBoundsCenter - RotatedNewBoundsExtents).IntPoint();
 					RotatedNewBounds.Max = (NewBoundsCenter + RotatedNewBoundsExtents).IntPoint() - 1;
 
-					// Mirror one axis of extents before rotation
-					RotatedOldBoundsExtentsWithDiff = RotatedOldBoundsExtents + RotatedNewOldCentersDiff * FVector2D(1, -1);
-
-					// Rotate old bounds "with" new bounds aka in relation to new bounds center
-					RotatedOldBoundsExtentsWithDiff = RotationMatrix.TransformPoint(RotatedOldBoundsExtentsWithDiff * FVector2D(1, -1));
-					RotatedNewOldCentersDiff = RotationMatrix.TransformPoint(RotatedNewOldCentersDiff);
-
-					RotatedOldBoundsExtents = RotatedOldBoundsExtentsWithDiff - RotatedNewOldCentersDiff;
-					RotatedOldBoundsCenter = NewBoundsCenter - RotatedNewOldCentersDiff;
+					// Rotate old bounds "with" around new bounds center
+					RotatedOldBoundsCenter = RotationMatrix.TransformPoint(RotatedOldBoundsCenter - NewBoundsCenter) + NewBoundsCenter;
+					RotatedOldBoundsExtents = RotationMatrix.TransformPoint(RotatedOldBoundsExtents).GetAbs();
 
 					RotatedOldBounds.Min = (RotatedOldBoundsCenter - RotatedOldBoundsExtents).IntPoint();
 					RotatedOldBounds.Max = (RotatedOldBoundsCenter + RotatedOldBoundsExtents).IntPoint() - 1;
-				}
-				while (RotatedOldBounds != OldBounds);
 
-				// Define side arrays
-				TArray<FIntRect> AdditiveSides;
-				TArray<FIntRect> SubtractiveSides;
-				AdditiveSides.Reserve(4);
-				SubtractiveSides.Reserve(4);
-
-				// Calculate difference represented as rect
-				const FIntRect Diff = OldBounds - NewBounds;
-					
-				// Left side
-				if (Diff.Min.X > 0)
-				{
-					// Additive
-					SideBounds.Min = FIntPoint(NewBounds.Min);
-					SideBounds.Max = FIntPoint(NewBounds.Min.X + Diff.Min.X - 1, NewBounds.Max.Y);
-					AdditiveSides.Emplace(SideBounds);
+					AccumulatedRotationMatrix = AccumulatedRotationMatrix.Concatenate(RotationMatrix.Inverse());
 				}
-				else if (Diff.Min.X < 0)
-				{
-					// Subtractive
-					SideBounds.Min = FIntPoint(OldBounds.Min);
-					SideBounds.Max = FIntPoint(OldBounds.Min.X - Diff.Min.X - 1, OldBounds.Max.Y);
-					SubtractiveSides.Emplace(SideBounds);
-				}
-
-				// Top side
-				if (Diff.Min.Y > 0)
-				{
-					// Additive
-					SideBounds.Min = FIntPoint(NewBounds.Min);
-					SideBounds.Max = FIntPoint(NewBounds.Max.X, NewBounds.Min.Y + Diff.Min.Y - 1);
-					AdditiveSides.Emplace(SideBounds);
-				}
-				else if (Diff.Min.Y < 0)
-				{
-					// Subtractive
-					SideBounds.Min = FIntPoint(OldBounds.Min);
-					SideBounds.Max = FIntPoint(OldBounds.Max.X, OldBounds.Min.Y - Diff.Min.Y - 1);
-					SubtractiveSides.Emplace(SideBounds);
-				}
-
-				// Right side
-				if (Diff.Max.X < 0)
-				{
-					// Additive
-					SideBounds.Min = FIntPoint(NewBounds.Max.X + Diff.Max.X + 1, NewBounds.Min.Y);
-					SideBounds.Max = FIntPoint(NewBounds.Max);
-					AdditiveSides.Emplace(SideBounds);
-				}
-				else if (Diff.Max.X > 0)
-				{
-					// Subtractive
-					SideBounds.Min = FIntPoint(OldBounds.Max.X - Diff.Max.X + 1, OldBounds.Min.Y);
-					SideBounds.Max = FIntPoint(OldBounds.Max);
-					SubtractiveSides.Emplace(SideBounds);
-				}
-
-				// Bottom side
-				if (Diff.Max.Y < 0)
-				{
-					// Additive
-					SideBounds.Min = FIntPoint(NewBounds.Min.X, NewBounds.Max.Y + Diff.Max.Y + 1);
-					SideBounds.Max = FIntPoint(NewBounds.Max);
-					AdditiveSides.Emplace(SideBounds);
-				}
-				else if (Diff.Max.Y > 0)
-				{
-					// Subtractive
-					SideBounds.Min = FIntPoint(OldBounds.Min.X, OldBounds.Max.Y - Diff.Max.Y + 1);
-					SideBounds.Max = FIntPoint(OldBounds.Max);
-					SubtractiveSides.Emplace(SideBounds);
-				}
+				while (!AccumulatedRotationMatrix.IsIdentity());
 
 				// Define removed & added cell containers
 				FMineGridMapChanges GridMapChanges;
@@ -337,6 +278,11 @@ void AMinesweeperPlayerControllerBase::AddRemoveGridMapAreaCells(const FMineGrid
 						for (int32 X = AdditiveBounds.Min.X; X <= AdditiveBounds.Max.X; ++X)
 						{
 							FIntPoint Coords(X, Y);
+
+							if (!MineGridMap.Cells.Contains(Coords))
+							{
+								continue;
+							}
 							EMineGridMapCell CellValue = MineGridMap.Cells[Coords];
 
 							if (!GridMapChanges.AddedGridMapCellCoords.Contains(Coords))

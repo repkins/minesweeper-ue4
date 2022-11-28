@@ -45,23 +45,26 @@ void AMineGridBase::AddOrRemoveGridCells(const FMineGridMapChanges& GridMapChang
 	// Remove and destroy cell actors
 	for (const FIntPoint& RemovedCoords : GridMapChanges.RemovedGridMapCells)
 	{
-		if (GridCellRefCounts[RemovedCoords] > 0)
+		if (auto CellRefCountsPtr = GridCellRefCounts.Find(RemovedCoords))
 		{
-			GridCellRefCounts[RemovedCoords]--;
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Decrementable GridCellRefCounts[%s] is already zero."), *RemovedCoords.ToString());
-		}
-
-		// Remove and destroy actor only if has no more references
-		if (GridCellRefCounts[RemovedCoords] == 0)
-		{
-			GridCellRefCounts.Remove(RemovedCoords);
-
-			if (AMineGridCellBase* CellActor = GridCoordsCells.FindAndRemoveChecked(RemovedCoords))
+			if (*CellRefCountsPtr > 0)
 			{
-				CellActor->Destroy();
+				GridCellRefCounts[RemovedCoords]--;
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("Decrementable GridCellRefCounts[%s] is already zero."), *RemovedCoords.ToString());
+			}
+
+			// Remove and destroy actor only if has no more references
+			if (*CellRefCountsPtr == 0)
+			{
+				GridCellRefCounts.Remove(RemovedCoords);
+
+				if (AMineGridCellBase* CellActor = GridCoordsCells.FindAndRemoveChecked(RemovedCoords))
+				{
+					CellActor->Destroy();
+				}
 			}
 		}
 	}

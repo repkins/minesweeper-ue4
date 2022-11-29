@@ -155,88 +155,90 @@ void AMinesweeperPlayerControllerBase::AddRemoveGridMapAreaCells(const FMineGrid
 				// Because start and end coords are inclusive, we need to increment by 1
 				const FIntPoint MapAreaSize = NewBounds.Size() + FIntPoint(1, 1);
 
-				FIntRect SideBounds;
+				// Rotated bounds are [Min, Max).
+				FBox2D RotatedNewBounds = FBox2D(NewBounds.Min, NewBounds.Max+1);
+				FBox2D RotatedOldBounds = FBox2D(OldBounds.Min, OldBounds.Max+1);
 
 				// Get center and extents of both new and old bounds for calculation needs
-				FVector2D NewBoundsExtents = FVector2D(NewBounds.Size() + 1) / 2;
-				FVector2D NewBoundsCenter = FVector2D(NewBounds.Min) + NewBoundsExtents;
+				FVector2D NewBoundsCenter, NewBoundsExtents;
+				RotatedNewBounds.GetCenterAndExtents(NewBoundsCenter, NewBoundsExtents);
 
-				FVector2D OldBoundsExtents = FVector2D(OldBounds.Size() + 1) / 2;
-				FVector2D OldBoundsCenter = FVector2D(OldBounds.Min) + OldBoundsExtents;
+				FVector2D OldBoundsCenter, OldBoundsExtents;
+				RotatedOldBounds.GetCenterAndExtents(OldBoundsCenter, OldBoundsExtents);
 
 				FVector2D RotatedNewBoundsExtents = NewBoundsExtents;
-				FIntRect RotatedNewBounds = NewBounds;
 
 				FVector2D RotatedOldBoundsCenter = OldBoundsCenter;
 				FVector2D RotatedOldBoundsExtents = OldBoundsExtents;
-				FIntRect RotatedOldBounds = OldBounds;
 
-				// Here is our rotation matrix to do 90 degrees turn
-				FMatrix2x2 RotationMatrix(
+				FBox2D SideBounds;
+				FVector2D SideBoundsExtents, SideBoundsCenter;
+
+				// Rotation matrix to do 90 degrees turn
+				const FMatrix2x2 RotationMatrix(
 					0, 1,
 					-1, 0
 				);
 				FMatrix2x2 AccumulatedRotationMatrix = FMatrix2x2();
 
+				// Sides are max-inclusive
 				TArray<FIntRect> AdditiveSides;
 				TArray<FIntRect> SubtractiveSides;
 				AdditiveSides.Reserve(4);
 				SubtractiveSides.Reserve(4);
 
 				do {
-					// Calculate difference represented as rect
-					const FIntRect Diff = RotatedOldBounds - RotatedNewBounds;
+					// Calculate difference on left edge of at time rotated old and new bounds
+					const FVector2D DiffMin = RotatedOldBounds.Min - RotatedNewBounds.Min;
 
-					// Left side
-					if (Diff.Min.X != 0)
+					if (DiffMin.X != 0)
 					{
-						bool bIsAdditive = Diff.Min.X > 0,
-								 bIsSubstractive = Diff.Min.X < 0;
+						bool bIsAdditive = DiffMin.X > 0,
+								 bIsSubstractive = DiffMin.X < 0;
 
 						if (bIsAdditive)
 						{
-							SideBounds.Min = FIntPoint(RotatedNewBounds.Min);
-							SideBounds.Max = FIntPoint(RotatedNewBounds.Min.X + Diff.Min.X - 1, RotatedNewBounds.Max.Y);
+							SideBounds.Min = FVector2D(RotatedNewBounds.Min);
+							SideBounds.Max = FVector2D(RotatedNewBounds.Min.X + DiffMin.X, RotatedNewBounds.Max.Y);
 						}
 						else if (bIsSubstractive)
 						{
-							SideBounds.Min = FIntPoint(RotatedOldBounds.Min);
-							SideBounds.Max = FIntPoint(RotatedOldBounds.Min.X - Diff.Min.X - 1, RotatedOldBounds.Max.Y);
+							SideBounds.Min = FVector2D(RotatedOldBounds.Min);
+							SideBounds.Max = FVector2D(RotatedOldBounds.Min.X - DiffMin.X, RotatedOldBounds.Max.Y);
 						}
 
 						// Rotate newly calculated side bounds to match to default orientation
-						FVector2D SideBoundsExtents = FVector2D(SideBounds.Size() + 1) / 2;
-						FVector2D SideBoundsCenter = FVector2D(SideBounds.Min) + SideBoundsExtents;
+						SideBounds.GetCenterAndExtents(SideBoundsCenter, SideBoundsExtents);
 
 						SideBoundsCenter = AccumulatedRotationMatrix.TransformPoint(SideBoundsCenter - NewBoundsCenter) + NewBoundsCenter;
 						SideBoundsExtents = AccumulatedRotationMatrix.TransformPoint(SideBoundsExtents).GetAbs();
 
-						SideBounds.Min = (SideBoundsCenter - SideBoundsExtents).IntPoint();
-						SideBounds.Max = (SideBoundsCenter + SideBoundsExtents).IntPoint() - 1;
+						SideBounds.Min = (SideBoundsCenter - SideBoundsExtents);
+						SideBounds.Max = (SideBoundsCenter + SideBoundsExtents);
 
 						// Add ready side bounds to collection
 						if (bIsAdditive)
 						{
-							AdditiveSides.Emplace(SideBounds);
+							AdditiveSides.Emplace(SideBounds.Min.IntPoint(), SideBounds.Max.IntPoint()-1);
 						}
 						else if (bIsSubstractive) 
 						{
-							SubtractiveSides.Emplace(SideBounds);
+							SubtractiveSides.Emplace(SideBounds.Min.IntPoint(), SideBounds.Max.IntPoint()-1);
 						}
 					}
 
 					// Rotate new bounds
 					RotatedNewBoundsExtents = RotationMatrix.TransformPoint(RotatedNewBoundsExtents).GetAbs();
 
-					RotatedNewBounds.Min = (NewBoundsCenter - RotatedNewBoundsExtents).IntPoint();
-					RotatedNewBounds.Max = (NewBoundsCenter + RotatedNewBoundsExtents).IntPoint() - 1;
+					RotatedNewBounds.Min = (NewBoundsCenter - RotatedNewBoundsExtents);
+					RotatedNewBounds.Max = (NewBoundsCenter + RotatedNewBoundsExtents);
 
-					// Rotate old bounds "with" around new bounds center
+					// Rotate old bounds around new bounds center
 					RotatedOldBoundsCenter = RotationMatrix.TransformPoint(RotatedOldBoundsCenter - NewBoundsCenter) + NewBoundsCenter;
 					RotatedOldBoundsExtents = RotationMatrix.TransformPoint(RotatedOldBoundsExtents).GetAbs();
 
-					RotatedOldBounds.Min = (RotatedOldBoundsCenter - RotatedOldBoundsExtents).IntPoint();
-					RotatedOldBounds.Max = (RotatedOldBoundsCenter + RotatedOldBoundsExtents).IntPoint() - 1;
+					RotatedOldBounds.Min = (RotatedOldBoundsCenter - RotatedOldBoundsExtents);
+					RotatedOldBounds.Max = (RotatedOldBoundsCenter + RotatedOldBoundsExtents);
 
 					AccumulatedRotationMatrix = AccumulatedRotationMatrix.Concatenate(RotationMatrix.Inverse());
 				}

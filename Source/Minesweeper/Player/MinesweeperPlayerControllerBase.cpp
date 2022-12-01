@@ -152,36 +152,47 @@ void AMinesweeperPlayerControllerBase::AddRemoveGridMapAreaCells(const FMineGrid
 				// Retrieve old starting & endings coords of map area
 				const FIntRect OldBounds(MineGridMapArea.StartCoords, MineGridMapArea.EndCoords);
 
-				// Because start and end coords are inclusive, we need to increment by 1
+				// Start and end coords here are inclusive here
 				const FIntPoint MapAreaSize = NewBounds.Size() + FIntPoint(1, 1);
 
-				// Rotated bounds are [Min, Max).
+				//
+				// Start of side bounds calculation. Calculation is performed on each side by iterating each of them.
+				// 
+				// Old and new bounds are going to be rotated around new bounds center so every side ends at the left edge where 
+				// comparison takes place for calculation. Then result of side calculation are going to be rotated back to map orientation.
+				// 
+
+				// Prepare rotated bounds which are [Min, Max)
 				FBox2D RotatedNewBounds = FBox2D(NewBounds.Min, NewBounds.Max+1);
 				FBox2D RotatedOldBounds = FBox2D(OldBounds.Min, OldBounds.Max+1);
 
-				// Get center and extents of both new and old bounds for calculation needs
+				// Prepare center and extents of both new and old bounds for calculation needs
 				FVector2D NewBoundsCenter, NewBoundsExtents;
 				RotatedNewBounds.GetCenterAndExtents(NewBoundsCenter, NewBoundsExtents);
 
 				FVector2D OldBoundsCenter, OldBoundsExtents;
 				RotatedOldBounds.GetCenterAndExtents(OldBoundsCenter, OldBoundsExtents);
 
+				// Prepare rotated new and old bounds extents for performing rotating transformation on
 				FVector2D RotatedNewBoundsExtents = NewBoundsExtents;
 
 				FVector2D RotatedOldBoundsCenter = OldBoundsCenter;
 				FVector2D RotatedOldBoundsExtents = OldBoundsExtents;
 
+				// Prepare rotated side bounds, center and extents for storing result of side calculation in currently iterating orientation
 				FBox2D SideBounds;
 				FVector2D SideBoundsExtents, SideBoundsCenter;
 
-				// Rotation matrix to do 90 degrees turn
+				// Rotation matrix to do 90 degrees turn as circular "increment" of iteration
 				const FMatrix2x2 RotationMatrix(
 					0, 1,
 					-1, 0
 				);
+				// Being used for rotating result of side calculation back to map orientation
 				FMatrix2x2 AccumulatedRotationMatrix = FMatrix2x2();
 
-				// Sides are max-inclusive
+				// Store all calculated sides rotated back to map orientation in relievant collections for cells processing within them. 
+				// Each element are end-inclusive.
 				TArray<FIntRect> AdditiveSides;
 				TArray<FIntRect> SubtractiveSides;
 				AdditiveSides.Reserve(4);
@@ -207,7 +218,7 @@ void AMinesweeperPlayerControllerBase::AddRemoveGridMapAreaCells(const FMineGrid
 							SideBounds.Max = FVector2D(RotatedOldBounds.Min.X - DiffMin.X, RotatedOldBounds.Max.Y);
 						}
 
-						// Rotate newly calculated side bounds to match to default orientation
+						// Rotate newly calculated side bounds to match map orientation
 						SideBounds.GetCenterAndExtents(SideBoundsCenter, SideBoundsExtents);
 
 						SideBoundsCenter = AccumulatedRotationMatrix.TransformPoint(SideBoundsCenter - NewBoundsCenter) + NewBoundsCenter;
@@ -242,13 +253,13 @@ void AMinesweeperPlayerControllerBase::AddRemoveGridMapAreaCells(const FMineGrid
 
 					AccumulatedRotationMatrix = AccumulatedRotationMatrix.Concatenate(RotationMatrix.Inverse());
 				}
-				while (!AccumulatedRotationMatrix.IsIdentity());
+				while (!AccumulatedRotationMatrix.IsIdentity());	// Until reaches map orientation
 
 				// Define removed & added cell containers
 				FMineGridMapChanges GridMapChanges;
 				GridMapChanges.NewGridDimensions = MapAreaSize;
 
-				// Start with subtractive bounds first
+				// Process subtractive bounds
 				for (const auto &SubtractiveBounds : SubtractiveSides)
 				{
 					if (AdditiveSides.Contains(SubtractiveBounds))
@@ -267,7 +278,7 @@ void AMinesweeperPlayerControllerBase::AddRemoveGridMapAreaCells(const FMineGrid
 					}
 				}
 
-				// Then with additive bounds
+				// Then additive bounds
 				for (const auto &AdditiveBounds : AdditiveSides)
 				{
 					if (SubtractiveSides.Contains(AdditiveBounds))
@@ -300,10 +311,11 @@ void AMinesweeperPlayerControllerBase::AddRemoveGridMapAreaCells(const FMineGrid
 				MineGridMapArea.StartCoords = NewBounds.Min;
 				MineGridMapArea.EndCoords = NewBounds.Max;
 
-				// Finally apply changes
+				// Finally apply changes by making RPC so they update their own grid map areas 
+				// as a workaround of Unreal not supporting containers replication
 				ApplyAddedRemovedGridCells(GridMapChanges);
 
-				// Remember player coords used to process
+				// Remember player coords for next time
 				PrevPlayerRelativeGridCoords = PawnRelativeGridCoords;
 			}
 		}

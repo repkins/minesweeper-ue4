@@ -9,6 +9,6 @@ public class MinesweeperServerTarget : TargetRules
 	{
 		Type = TargetType.Server;
 		DefaultBuildSettings = BuildSettingsVersion.V2;
-		ExtraModuleNames.AddRange( new string[] { "Minesweeper" } );
+		ExtraModuleNames.AddRange( new string[] { "Minesweeper", "MinesweeperTests" } );
 	}
 }

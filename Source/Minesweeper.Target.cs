@@ -9,6 +9,6 @@ public class MinesweeperTarget : TargetRules
 	{
 		Type = TargetType.Game;
 		DefaultBuildSettings = BuildSettingsVersion.V2;
-		ExtraModuleNames.AddRange( new string[] { "Minesweeper" } );
+		ExtraModuleNames.AddRange( new string[] { "Minesweeper", "MinesweeperTests" } );
 	}
 }

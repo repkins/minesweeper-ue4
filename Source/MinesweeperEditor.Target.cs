@@ -9,6 +9,6 @@ public class MinesweeperEditorTarget : TargetRules
 	{
 		Type = TargetType.Editor;
 		DefaultBuildSettings = BuildSettingsVersion.V2;
-		ExtraModuleNames.AddRange( new string[] { "Minesweeper" } );
+		ExtraModuleNames.AddRange( new string[] { "Minesweeper", "MinesweeperTests" } );
 	}
 }

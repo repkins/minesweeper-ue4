@@ -160,7 +160,7 @@ void AMinesweeperPlayerControllerTest::Define()
 				GivenGridMap.GridDimensions = GivenMapSize;
 				GivenGridMap.StartCoords = FIntPoint::ZeroValue;
 				GivenGridMap.EndCoords = GivenGridMap.GridDimensions - 1;
-				GivenGridMap.Cells.Reserve(GivenGridMap.GridDimensions.X* GivenGridMap.GridDimensions.Y);
+				GivenGridMap.Cells.Reserve(GivenGridMap.GridDimensions.X * GivenGridMap.GridDimensions.Y);
 				for (int32 Y = GivenGridMap.StartCoords.Y; Y <= GivenGridMap.EndCoords.Y; Y++) {
 					for (int32 X = GivenGridMap.StartCoords.X; X <= GivenGridMap.EndCoords.X; X++) {
 						GivenGridMap.Cells.Emplace(FIntPoint(X, Y), (EMineGridMapCell)FMath::RandRange(0, 8));
@@ -313,7 +313,7 @@ void AMinesweeperPlayerControllerTest::Define()
 					MineGridMapArea.EndCoords.X = FMath::Clamp(PrevPlayerRelGridCoords.X + MapAreaMaxHalfSizeX, GivenGridMap.StartCoords.X, GivenGridMap.EndCoords.X);
 					MineGridMapArea.EndCoords.Y = FMath::Clamp(PrevPlayerRelGridCoords.Y + MapAreaMaxHalfSizeY, GivenGridMap.StartCoords.Y, GivenGridMap.EndCoords.Y);
 					MineGridMapArea.GridDimensions = MineGridMapArea.EndCoords - MineGridMapArea.StartCoords + 1;
-					MineGridMapArea.Cells.Reserve(MineGridMapArea.GridDimensions.X* MineGridMapArea.GridDimensions.Y);
+					MineGridMapArea.Cells.Reserve(MineGridMapArea.GridDimensions.X * MineGridMapArea.GridDimensions.Y);
 					GridCellRefCounts.Reserve(MineGridMapArea.GridDimensions.X * MineGridMapArea.GridDimensions.Y);
 					for (int32 Y = MineGridMapArea.StartCoords.Y; Y <= MineGridMapArea.EndCoords.Y; Y++) {
 						for (int32 X = MineGridMapArea.StartCoords.X; X <= MineGridMapArea.EndCoords.X; X++) {

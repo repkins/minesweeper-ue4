@@ -4,18 +4,18 @@
 	"Category": "",
 	"Description": "",
 	"Modules": [
-    {
-      "Name": "Minesweeper",
-      "Type": "Runtime",
-      "LoadingPhase": "Default",
-      "AdditionalDependencies": [
-        "Engine"
-      ]
-    },
-    {
-      "Name": "MinesweeperTests",
-      "Type": "UncookedOnly"
-    }
+		{
+			"Name": "Minesweeper",
+			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"Engine"
+			]
+		},
+		{
+			"Name": "MinesweeperTests",
+			"Type": "UncookedOnly"
+		}
 	],
 	"Plugins": [
 		{

@@ -4,7 +4,7 @@ Developed with Unreal Engine 4
 
 # Prerequisites
 
-1. Unreal Engine 4.26
+1. Unreal Engine 4.27
 2. Windows 10 x64
 
 # How-to play

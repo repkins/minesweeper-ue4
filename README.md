@@ -1,11 +1,26 @@
-# Minesweeper (multiplayer-enabled)
+# Minesweeper on UE4
 
-Developed with Unreal Engine 4
+Small game inspired by Microsoft's classic Minesweeper running on Unreal Engine 4.27 with multiplayer co-op support.
 
 # Prerequisites
 
 1. Unreal Engine 4.27
 2. Windows 10 x64
+
+# Solution Overview
+    
+Solution architecture is networking ready, designed with networking in mind. It features added **replication**, different kinds of **RPCs (remote procedure calls)**, **authority checks**. All match progress logic is contained in it's own derived authoritive-priviled game mode class, inheritating accessibility only by one having server role (listenserver or dedicated) to prevent cheating. It also contains **RPC-enabled cells remote-streaming system**, where only server knows about every cell state for every client and clients does not store state of cells outside of clients viewports.
+
+Implemented the following units:
+1. `MinesweeperGameMode` class is resposible for match control. Communicates only with PlayerControllers and updates values in GameState about match state.
+2. `MinesweeperPlayerController` class is responsible of controlling the character, contains action bindings to methods, communicates with `GameMode` for match and cell opening updates. Uses `MineGrid` actor as a representation container of cells, telling him what exactly to represent and listening of "cell triggering" events.
+3. `MineGrid` class is a representational container of cells which defines the root location of cells in the game world. Spawns or destroys cell actors in response of player controller, responds to player controller about character triggering coordinates by listening to cells.
+4. `MineGridCell` class is a physical representation of a single cell visible in the viewport and interactable with them by player. Contains trigger box to listen for character overlapping events to initiate cell triggering event broadcast chain (up through `MineGrid` and `PlayerController` until `GameMode`). Responds to cell value updates by it's `MineGrid` container actor to update visual representation of it.
+
+Grid, Grid Cells, GameMode and PlayerController core logic are implemented natively in C++ with the possibility in blueprints to:
+- change property values or references to assets;
+- invoking native methods;
+- listening to Blueprint events, overriding native implemention of them.
 
 # How-to play
 
@@ -25,19 +40,3 @@ Developed with Unreal Engine 4
 9. In either of two game ends all clients depending of lobby role within session have the following options by clicking on:
     - lobby leader: start a new game (opens "main" menu)
     - all clients: quit
-
-# Solution Description
-    
-Solution architecture is networking ready, designed with networking in mind. It features added replication, different kinds of RPCs (remote procedure calls), authority checks. All match progress logic is contained in it's own derived authoritive-priviled game mode class, inheritating accessibility only by one having server role (listenserver or dedicated) to prevent cheating. It also contains RPC-enabled cells remote-streaming system, where only server knows about every cell state for every client and clients does not store state of cells outside of clients viewports.
-
-Implemented the following units:
-1. `MinesweeperGameMode` class is resposible for match control. Communicates only with PlayerControllers and updates values in GameState about match state.
-2. `MinesweeperPlayerController` class is responsible of controlling the character, contains action bindings to methods, communicates with `GameMode` for match and cell opening updates. Uses `MineGrid` actor as a representation container of cells, telling him what exactly to represent and listening of "cell triggering" events.
-3. `MineGrid` class is a representational container of cells which defines the root location of cells in the game world. Spawns or destroys cell actors in response of player controller, responds to player controller about character triggering coordinates by listening to cells.
-4. `MineGridCell` class is a physical representation of a single cell visible in the viewport and interactable with them by player. Contains trigger box to listen for character overlapping events to initiate cell triggering event broadcast chain (up through `MineGrid` and `PlayerController` until `GameMode`). Responds to cell value updates by it's `MineGrid` container actor to update visual representation of it.
-
-Grid, Grid Cells, GameMode and PlayerController core logic are implemented natively in C++ with the possibility in blueprints to:
-- change property values or references to assets;
-- invoking native methods;
-- listening to Blueprint events, overriding native implemention of them.
-

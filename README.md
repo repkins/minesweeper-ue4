@@ -9,7 +9,7 @@ Small game inspired by Microsoft's classic Minesweeper running on Unreal Engine 
 
 # Solution Overview
     
-Solution architecture is networking ready, designed with networking in mind. It features added **replication**, different kinds of **RPCs (remote procedure calls)**, **authority checks**. All match progress logic is contained in it's own derived authoritive-priviled game mode class, inheritating accessibility only by one having server role (listenserver or dedicated) to prevent cheating. It also contains **RPC-enabled cells remote-streaming system**, where only server knows about every cell state for every client and clients does not store state of cells outside of clients viewports.
+Solution architecture is networking ready, designed with networking in mind. It features added **replication (state synchronization)**, different kinds of **RPCs (remote procedure calls)**, **authority checks**. All match progress logic is contained in it's own derived authoritive-priviled game mode class, inheritating accessibility only by one having server role (listenserver or dedicated) to prevent cheating. It also contains **RPC-enabled cells remote-streaming system**, where only server knows about every cell state for every client and clients does not store state of cells outside of clients viewports.
 
 Implemented the following units:
 1. `MinesweeperGameMode` class is resposible for match control. Communicates only with PlayerControllers and updates values in GameState about match state.
